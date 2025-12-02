@@ -29,7 +29,7 @@ export async function parseTextIntoChunks(text: string): Promise<TextChunk[]> {
 async function parseWithLLM(words: string[]): Promise<TextChunk[]> {
   try {
     const text = words.join(' ');
-    const promptText = `You are a text chunking expert for speed reading applications. Your task is to break the following text into optimal reading chunks.
+    const prompt = `You are a text chunking expert for speed reading applications. Your task is to break the following text into optimal reading chunks.
 
 Rules:
 1. Each chunk should contain 1-3 words that form a natural semantic unit
@@ -55,7 +55,7 @@ Example format:
   ]
 }`;
 
-    const response = await window.spark.llm(promptText, 'gpt-4o-mini', true);
+    const response = await window.spark.llm(prompt, 'gpt-4o-mini', true);
     const parsed = JSON.parse(response);
     
     return parsed.chunks.map((chunk: any, index: number) => ({
