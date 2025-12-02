@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { parseTextIntoChunks, TextChunk } from '@/lib/text-parser';
+import { runOcrOnFile } from '@/lib/ocr-service';
 import { ReadingDisplay } from '@/components/ReadingDisplay';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/sonner';
 import { 
   Play, 
@@ -15,7 +17,9 @@ import {
   ArrowCounterClockwise, 
   ArrowLeft, 
   ArrowRight,
-  UploadSimple 
+  UploadSimple,
+  Image as ImageIcon,
+  TextAa
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
@@ -33,6 +37,9 @@ function App() {
   const [wpm, setWpm] = useKV<number>('reading-wpm', 500);
   const [showInput, setShowInput] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
@@ -125,6 +132,52 @@ function App() {
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    setSelectedFile(file);
+    setIsParsing(true);
+    setOcrProgress(0);
+    toast.info('Reading image...');
+
+    try {
+      const ocrResult = await runOcrOnFile(file, 'eng', (progress) => {
+        setOcrProgress(Math.round(progress * 100));
+      });
+
+      if (!ocrResult.text.trim()) {
+        toast.error('No text found in image');
+        return;
+      }
+
+      const wordCount = ocrResult.text.trim().split(/\s+/).length;
+      toast.success(`Extracted ${wordCount} words (${Math.round(ocrResult.confidence)}% confidence)`);
+
+      const parsedChunks = await parseTextIntoChunks(ocrResult.text);
+      setChunks(parsedChunks);
+      setCurrentIndex(0);
+      setShowInput(false);
+      setInputText(ocrResult.text);
+    } catch (error) {
+      toast.error('Failed to process image');
+      console.error(error);
+    } finally {
+      setIsParsing(false);
+      setOcrProgress(0);
+      setSelectedFile(null);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
   const skipForward = () => {
     if (currentIndex < safeChunks.length - 1) {
       setCurrentIndex(currentIndex + 10 < safeChunks.length ? currentIndex + 10 : safeChunks.length - 1);
@@ -146,6 +199,10 @@ function App() {
     setIsPlaying(false);
     setShowInput(true);
     setInputText('');
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -275,36 +332,90 @@ function App() {
           <DialogHeader>
             <DialogTitle>Enter Text to Read</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Textarea
-              id="reading-text-input"
-              placeholder="Paste your text here... (minimum 10 words)"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="min-h-[300px] resize-none"
-            />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {inputText.trim().split(/\s+/).filter(w => w).length} words
-                </span>
+          <Tabs defaultValue="text" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="text">
+                <TextAa className="mr-2" />
+                Paste Text
+              </TabsTrigger>
+              <TabsTrigger value="image">
+                <ImageIcon className="mr-2" />
+                Upload Image
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="text" className="space-y-4">
+              <Textarea
+                id="reading-text-input"
+                placeholder="Paste your text here... (minimum 10 words)"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="min-h-[300px] resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {inputText.trim().split(/\s+/).filter(w => w).length} words
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setInputText(SAMPLE_TEXT)}
+                  >
+                    Load Sample
+                  </Button>
+                </div>
                 <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setInputText(SAMPLE_TEXT)}
+                  onClick={handleParse}
+                  disabled={isParsing || !inputText.trim()}
+                  size="lg"
                 >
-                  Load Sample
+                  {isParsing ? 'Parsing...' : 'Start Reading'}
                 </Button>
               </div>
-              <Button 
-                onClick={handleParse}
-                disabled={isParsing || !inputText.trim()}
-                size="lg"
-              >
-                {isParsing ? 'Parsing...' : 'Start Reading'}
-              </Button>
-            </div>
-          </div>
+            </TabsContent>
+            <TabsContent value="image" className="space-y-4">
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center min-h-[300px] flex flex-col items-center justify-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="image-upload"
+                />
+                {isParsing ? (
+                  <div className="space-y-4 w-full max-w-xs">
+                    <ImageIcon className="mx-auto text-primary" size={48} />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Processing image...</p>
+                      <Progress value={ocrProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground">{ocrProgress}%</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <ImageIcon className="mb-4 text-muted-foreground" size={48} />
+                    <h3 className="text-lg font-semibold mb-2">Upload an Image</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      PNG, JPG, or other image formats
+                    </p>
+                    <Button 
+                      onClick={() => fileInputRef.current?.click()}
+                      size="lg"
+                    >
+                      <UploadSimple className="mr-2" />
+                      Choose Image
+                    </Button>
+                  </>
+                )}
+              </div>
+              {!isParsing && (
+                <p className="text-xs text-muted-foreground text-center">
+                  The image will be processed using OCR to extract readable text
+                </p>
+              )}
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>

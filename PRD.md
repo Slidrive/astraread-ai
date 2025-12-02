@@ -13,11 +13,11 @@ A sophisticated speed reading application that uses intelligent text chunking an
 ## Essential Features
 
 ### Text Input & Management
-- **Functionality**: Accept and parse text input from paste or file upload
-- **Purpose**: Provide flexible ways to load reading material
-- **Trigger**: User clicks input area or drags text file
-- **Progression**: Empty state → Click/paste/drop → Text appears in input area → Parse button becomes active → Click parse → Reading view loads
-- **Success criteria**: App handles plain text up to 50,000 words, preserves paragraph breaks, handles various text encodings
+- **Functionality**: Accept and parse text input from paste, manual entry, or image upload with OCR
+- **Purpose**: Provide flexible ways to load reading material from various sources
+- **Trigger**: User clicks input area, pastes text, or uploads an image
+- **Progression**: Empty state → Click/paste/upload → Text appears in input area or image is processed via OCR → Parse button becomes active → Click parse → Reading view loads
+- **Success criteria**: App handles plain text up to 50,000 words, preserves paragraph breaks, handles various text encodings, successfully extracts text from images with confidence reporting
 
 ### Intelligent Word Chunking
 - **Functionality**: Group words into semantic chunks (1-3 words) based on natural language patterns
@@ -61,6 +61,9 @@ A sophisticated speed reading application that uses intelligent text chunking an
 - **Special characters**: Strip or preserve formatting marks based on user preference
 - **Rapid speed changes**: Debounce slider input to prevent performance issues
 - **Resume from pause**: Maintain exact position, highlight current chunk on pause
+- **OCR failures**: Handle images with no detectable text gracefully with error messaging
+- **Low OCR confidence**: Display confidence percentage, allow user to review/edit extracted text
+- **Large images**: Process images efficiently without blocking UI, show progress indicator
 
 ## Design Direction
 The design should feel focused and meditative—like a precision instrument for the mind. It should embrace minimalism with purposeful moments of clarity, using generous negative space and deliberate typography to create a distraction-free reading sanctuary. The interface should be serious and elegant, fading into the background during reading while providing confident, immediate control when needed.
@@ -103,18 +106,21 @@ Animations should be purposeful and subtle—reinforcing focus rather than break
 ## Component Selection
 - **Components**: 
   - Dialog for initial text input and settings
+  - Tabs for switching between text input and image upload
   - Slider for speed control with custom styling for precise control
   - Button for all playback controls (play/pause/restart/skip) with distinct states
-  - Progress for reading position indicator
+  - Progress for reading position indicator and OCR processing
   - Card for control panel with subtle elevation
   - Textarea for text input with adequate padding
   - Label for all form elements with clear hierarchy
+  - File input for image upload with drag-and-drop support
   
 - **Customizations**: 
   - Custom reading display component with focus word highlighting
   - Custom keyboard shortcut handler with visual feedback
   - Custom chunk parser using LLM for intelligent grouping
   - Custom speed presets component (quick WPM selection)
+  - Custom OCR processing with progress feedback and confidence reporting
   
 - **States**: 
   - Buttons: Subtle shadow on default, bright accent on hover, scale down on press, muted when disabled
@@ -126,8 +132,9 @@ Animations should be purposeful and subtle—reinforcing focus rather than break
   - Pause for pause state
   - ArrowCounterClockwise for restart
   - ArrowLeft/ArrowRight for skip
-  - Gear for settings
   - UploadSimple for file input
+  - Image for image upload tab
+  - TextAa for text input tab
   
 - **Spacing**: 
   - Generous padding around reading display (p-16)
