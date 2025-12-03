@@ -1,27 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
-import { useKV } from '@github/spark/hooks';
-import { parseTextIntoChunks, TextChunk } from '@/lib/text-parser';
-import { runOcrOnFile } from '@/lib/ocr-service';
-import { ReadingDisplay } from '@/components/ReadingDisplay';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Toaster } from '@/components/ui/sonner';
-import { 
-  Play, 
-  Pause, 
-  ArrowCounterClockwise, 
-  ArrowLeft, 
-  ArrowRight,
-  UploadSimple,
-  Image as ImageIcon,
-  TextAa
-} from '@phosphor-icons/react';
-import { toast } from 'sonner';
+import React, { useEffect, useRef, useState } from 'react';
+import { parseTextIntoChunks, TextChunk } from './lib/text-parser';
+import { runOcrOnFile } from './lib/ocr-service';
 
 const SAMPLE_TEXT = `Speed reading is a collection of techniques that aim to increase reading speed without greatly reducing comprehension or retention. Methods include skimming, meta guiding, and eliminating subvocalization. The many available speed reading training programs may utilize books, videos, software, and seminars. The most effective techniques often involve training the eyes to make shorter fixations and broader saccades across the text.
 
@@ -29,58 +8,51 @@ Research has shown that skilled readers can read at rates of up to 1000 words pe
 
 Modern speed reading applications leverage technology to present text in optimal ways for rapid consumption. By chunking text into meaningful phrases and highlighting focus words, these tools help readers maintain comprehension while dramatically increasing their reading pace. The key is finding the right balance between speed and understanding for each individual reader.`;
 
-function App() {
+const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
-  const [chunks, setChunks] = useKV<TextChunk[]>('reading-chunks', []);
+  const [chunks, setChunks] = useState<TextChunk[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [wpm, setWpm] = useKV<number>('reading-wpm', 500);
+  const [wpm, setWpm] = useState(500);
   const [showInput, setShowInput] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
   const currentChunk = safeChunks[currentIndex] || null;
   const progress = safeChunks.length > 0 ? (currentIndex / safeChunks.length) * 100 : 0;
-  const totalWords = safeChunks.reduce((acc, chunk) => acc + chunk.words.length, 0);
-  const wordsRead = safeChunks.slice(0, currentIndex).reduce((acc, chunk) => acc + chunk.words.length, 0);
+  const totalWords = safeChunks.reduce((acc, c) => acc + c.words.length, 0);
+  const wordsRead = safeChunks.slice(0, currentIndex).reduce((acc, c) => acc + c.words.length, 0);
   const wordsRemaining = totalWords - wordsRead;
-  const minutesRemaining = wordsRemaining / safeWpm;
+  const minutesRemaining = wordsRemaining > 0 ? wordsRemaining / safeWpm : 0;
 
   useEffect(() => {
-    if (safeChunks.length === 0) {
-      setShowInput(true);
-    }
-  }, [safeChunks.length]);
+    if (!isPlaying || !currentChunk) return;
 
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const msPerChunk = (60000 / safeWpm) * (currentChunk?.words.length || 1);
+    const msPerChunk = (60000 / safeWpm) * currentChunk.words.length;
     const timer = setTimeout(() => {
       if (currentIndex < safeChunks.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
         setIsPlaying(false);
-        toast.success('Reading complete!');
+        alert('Reading complete!');
       }
     }, msPerChunk);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentIndex, safeChunks.length, safeWpm, currentChunk]);
+  }, [isPlaying, currentIndex, safeChunks, safeWpm, currentChunk]);
 
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
+    const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key) {
         case ' ':
           e.preventDefault();
           if (safeChunks.length > 0) {
-            setIsPlaying(!isPlaying);
+            setIsPlaying(p => !p);
           }
           break;
         case 'ArrowLeft':
@@ -99,75 +71,58 @@ function App() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPlaying, safeChunks.length, currentIndex]);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [safeChunks.length, currentIndex]);
 
   const handleParse = async () => {
     if (!inputText.trim()) {
-      toast.error('Please enter some text');
+      alert('Please enter some text');
       return;
     }
-
     const wordCount = inputText.trim().split(/\s+/).length;
     if (wordCount < 10) {
-      toast.error('Please enter at least 10 words');
+      alert('Please enter at least 10 words');
       return;
     }
 
     setIsParsing(true);
-    toast.info('Analyzing text...');
 
     try {
-      const parsedChunks = await parseTextIntoChunks(inputText);
-      setChunks(parsedChunks);
+      const parsed = await parseTextIntoChunks(inputText);
+      setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
-      toast.success(`Parsed ${parsedChunks.length} chunks from ${wordCount} words`);
-    } catch (error) {
-      toast.error('Failed to parse text');
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to parse text');
     } finally {
       setIsParsing(false);
     }
   };
 
   const handleImageUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-
-    setSelectedFile(file);
     setIsParsing(true);
     setOcrProgress(0);
-    toast.info('Reading image...');
 
     try {
-      const ocrResult = await runOcrOnFile(file, 'eng', (progress) => {
-        setOcrProgress(Math.round(progress * 100));
-      });
-
-      if (!ocrResult.text.trim()) {
-        toast.error('No text found in image');
+      const { text, confidence } = await runOcrOnFile(file, 'eng', p => setOcrProgress(Math.round(p * 100)));
+      if (!text) {
+        alert('No text detected in image');
         return;
       }
-
-      const wordCount = ocrResult.text.trim().split(/\s+/).length;
-      toast.success(`Extracted ${wordCount} words (${Math.round(ocrResult.confidence)}% confidence)`);
-
-      const parsedChunks = await parseTextIntoChunks(ocrResult.text);
-      setChunks(parsedChunks);
+      console.log(`OCR confidence: ${confidence}`);
+      setInputText(text);
+      const parsed = await parseTextIntoChunks(text);
+      setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
-      setInputText(ocrResult.text);
-    } catch (error) {
-      toast.error('Failed to process image');
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process image');
     } finally {
       setIsParsing(false);
       setOcrProgress(0);
-      setSelectedFile(null);
     }
   };
 
@@ -180,13 +135,13 @@ function App() {
 
   const skipForward = () => {
     if (currentIndex < safeChunks.length - 1) {
-      setCurrentIndex(currentIndex + 10 < safeChunks.length ? currentIndex + 10 : safeChunks.length - 1);
+      setCurrentIndex(Math.min(safeChunks.length - 1, currentIndex + 10));
     }
   };
 
   const skipBackward = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 10 > 0 ? currentIndex - 10 : 0);
+      setCurrentIndex(Math.max(0, currentIndex - 10));
     }
   };
 
@@ -199,227 +154,225 @@ function App() {
     setIsPlaying(false);
     setShowInput(true);
     setInputText('');
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setChunks([]);
+    setCurrentIndex(0);
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Toaster />
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">Speed Reader</h1>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 flex flex-col">
+      <header className="border-b border-slate-800 bg-black/40 backdrop-blur">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+            <span className="text-blue-400">LearningTheForce</span>{' '}
+            <span className="text-slate-200">AI Reader</span>
+          </h1>
           {safeChunks.length > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm"
+            <button
               onClick={handleNewText}
+              className="px-3 py-1.5 text-sm rounded-md border border-slate-600 hover:bg-slate-800"
             >
-              <UploadSimple className="mr-2" />
               New Text
-            </Button>
+            </button>
           )}
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        <ReadingDisplay chunk={currentChunk} isPlaying={isPlaying} />
+      <main className="flex-1 max-w-5xl mx-auto px-4 py-8">
+        {/* Reading display */}
+        <div className="min-h-[160px] flex items-center justify-center mb-8">
+          {currentChunk ? (
+            <div className="border border-slate-700 rounded-2xl px-8 py-6 bg-slate-900/80 shadow-lg max-w-3xl w-full text-center">
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-3">
+                {isPlaying ? 'Reading…' : 'Paused'}
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 text-4xl md:text-5xl font-semibold">
+                {currentChunk.words.map((w, idx) => (
+                  <span
+                    key={idx}
+                    className={
+                      idx === currentChunk.focusIndex
+                        ? 'text-blue-400 drop-shadow'
+                        : 'text-slate-100/80'
+                    }
+                  >
+                    {w}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-400 text-sm">
+              Paste some text or upload an image to begin reading.
+            </p>
+          )}
+        </div>
 
+        {/* Controls & progress */}
         {safeChunks.length > 0 && (
           <div className="space-y-6">
             <div className="space-y-2">
-              <Progress value={progress} className="h-2" />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all"
+                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-slate-400">
                 <span>{Math.round(progress)}% complete</span>
-                <span>{minutesRemaining < 1 ? '<1' : Math.round(minutesRemaining)} min remaining</span>
+                <span>
+                  {minutesRemaining < 1 ? '<1' : Math.round(minutesRemaining)} min remaining
+                </span>
               </div>
             </div>
 
-            <Card className="p-6 space-y-6">
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <Button
-                  size="lg"
-                  variant="outline"
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
                   onClick={skipBackward}
                   disabled={currentIndex === 0}
+                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800 disabled:opacity-40"
                 >
-                  <ArrowLeft className="mr-2" />
-                  Skip Back
-                </Button>
-
-                <Button
-                  size="lg"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="min-w-[140px]"
+                  ⬅ Skip Back
+                </button>
+                <button
+                  onClick={() => setIsPlaying(p => !p)}
+                  className="px-4 py-2 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white font-medium"
                 >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="mr-2" weight="fill" />
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2" weight="fill" />
-                      Play
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
+                  {isPlaying ? '⏸ Pause' : '▶ Play'}
+                </button>
+                <button
                   onClick={skipForward}
                   disabled={currentIndex === safeChunks.length - 1}
+                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800 disabled:opacity-40"
                 >
-                  Skip Forward
-                  <ArrowRight className="ml-2" />
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
+                  Skip Forward ➡
+                </button>
+                <button
                   onClick={restart}
+                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800"
                 >
-                  <ArrowCounterClockwise className="mr-2" />
-                  Restart
-                </Button>
+                  ⟲ Restart
+                </button>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Reading Speed</label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-accent">{safeWpm}</span>
-                    <span className="text-sm text-muted-foreground font-medium">WPM</span>
-                  </div>
+                  <span className="text-sm text-slate-300">Reading speed</span>
+                  <span className="text-3xl font-semibold text-blue-400">{safeWpm}</span>
                 </div>
-                <Slider
-                  value={[safeWpm]}
-                  onValueChange={(value) => setWpm(value[0])}
+                <input
+                  type="range"
                   min={200}
                   max={1000}
                   step={50}
+                  value={safeWpm}
+                  onChange={e => setWpm(Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="flex justify-between gap-2">
-                  {[300, 500, 700].map((speed) => (
-                    <Button
-                      key={speed}
-                      size="sm"
-                      variant={safeWpm === speed ? 'default' : 'outline'}
-                      onClick={() => setWpm(speed)}
-                      className="flex-1"
+                <div className="flex gap-2">
+                  {[300, 500, 700].map(spd => (
+                    <button
+                      key={spd}
+                      onClick={() => setWpm(spd)}
+                      className={`flex-1 px-3 py-1.5 text-sm rounded-md border ${
+                        safeWpm === spd
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'border-slate-600 text-slate-200 hover:bg-slate-800'
+                      }`}
                     >
-                      {speed}
-                    </Button>
+                      {spd} WPM
+                    </button>
                   ))}
                 </div>
               </div>
-            </Card>
-
-            <div className="text-center text-sm text-muted-foreground space-y-1">
-              <p>Keyboard shortcuts: Space = Play/Pause | ← → = Skip | R = Restart</p>
-              <p className="text-xs">{wordsRead} / {totalWords} words read</p>
             </div>
+
+            <p className="text-center text-xs text-slate-500">
+              Keyboard: Space = Play/Pause • ← / → = Skip • R = Restart • {wordsRead}/{totalWords}{' '}
+              words read
+            </p>
           </div>
         )}
-      </main>
 
-      <Dialog open={showInput} onOpenChange={setShowInput}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Enter Text to Read</DialogTitle>
-          </DialogHeader>
-          <Tabs defaultValue="text" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="text">
-                <TextAa className="mr-2" />
-                Paste Text
-              </TabsTrigger>
-              <TabsTrigger value="image">
-                <ImageIcon className="mr-2" />
-                Upload Image
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="text" className="space-y-4">
-              <Textarea
-                id="reading-text-input"
-                placeholder="Paste your text here... (minimum 10 words)"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                className="min-h-[300px] resize-none"
-              />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {inputText.trim().split(/\s+/).filter(w => w).length} words
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setInputText(SAMPLE_TEXT)}
-                  >
-                    Load Sample
-                  </Button>
-                </div>
-                <Button 
-                  onClick={handleParse}
-                  disabled={isParsing || !inputText.trim()}
-                  size="lg"
+        {/* Input dialog */}
+        {showInput && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div className="w-full max-w-2xl mx-4 rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4">
+              <h2 className="text-lg font-semibold mb-2">Start a New Reading Session</h2>
+
+              <div className="flex gap-2 text-sm mb-2">
+                <button
+                  className="px-3 py-1.5 rounded-md bg-blue-500 text-white"
+                  onClick={() => setInputText(SAMPLE_TEXT)}
                 >
-                  {isParsing ? 'Parsing...' : 'Start Reading'}
-                </Button>
+                  Load Sample Text
+                </button>
               </div>
-            </TabsContent>
-            <TabsContent value="image" className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center min-h-[300px] flex flex-col items-center justify-center">
+
+              <textarea
+                placeholder="Paste your text here…"
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                className="w-full min-h-[180px] rounded-md border border-slate-700 bg-slate-950/60 text-sm px-3 py-2 text-slate-100"
+              />
+
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>
+                  {inputText.trim().split(/\s+/).filter(Boolean).length} words
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleParse}
+                    disabled={isParsing}
+                    className="px-3 py-1.5 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
+                  >
+                    {isParsing ? 'Parsing…' : 'Start Reading'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-slate-800 pt-4 space-y-3">
+                <p className="text-xs text-slate-400">Or upload an image with text:</p>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
-                  className="hidden"
-                  id="image-upload"
+                  className="text-xs text-slate-300"
                 />
-                {isParsing ? (
-                  <div className="space-y-4 w-full max-w-xs">
-                    <ImageIcon className="mx-auto text-primary" size={48} />
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Processing image...</p>
-                      <Progress value={ocrProgress} className="h-2" />
-                      <p className="text-xs text-muted-foreground">{ocrProgress}%</p>
+                {isParsing && (
+                  <div className="space-y-1">
+                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all"
+                        style={{ width: `${ocrProgress}%` }}
+                      />
                     </div>
+                    <p className="text-xs text-slate-400">{ocrProgress}%</p>
                   </div>
-                ) : (
-                  <>
-                    <ImageIcon className="mb-4 text-muted-foreground" size={48} />
-                    <h3 className="text-lg font-semibold mb-2">Upload an Image</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      PNG, JPG, or other image formats
-                    </p>
-                    <Button 
-                      onClick={() => fileInputRef.current?.click()}
-                      size="lg"
-                    >
-                      <UploadSimple className="mr-2" />
-                      Choose Image
-                    </Button>
-                  </>
                 )}
               </div>
-              {!isParsing && (
-                <p className="text-xs text-muted-foreground text-center">
-                  The image will be processed using OCR to extract readable text
-                </p>
-              )}
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => {
+                    if (chunks.length > 0) {
+                      setShowInput(false);
+                    } else {
+                      handleNewText();
+                    }
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
-}
+};
 
 export default App;
