@@ -1,12 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { parseTextIntoChunks, TextChunk } from './lib/text-parser';
 import { runOcrOnFile } from './lib/ocr-service';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
+import { Button } from './components/ui/button';
+import { Slider } from './components/ui/slider';
+import { Progress } from './components/ui/progress';
+import { Textarea } from './components/ui/textarea';
+import { Card, CardContent } from './components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Alert, AlertDescription } from './components/ui/alert';
+import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 
 const SAMPLE_TEXT = `Speed reading is a collection of techniques that aim to increase reading speed without greatly reducing comprehension or retention. Methods include skimming, meta guiding, and eliminating subvocalization. The many available speed reading training programs may utilize books, videos, software, and seminars. The most effective techniques often involve training the eyes to make shorter fixations and broader saccades across the text.
 
 Research has shown that skilled readers can read at rates of up to 1000 words per minute, though average reading speeds are typically between 200 and 300 words per minute. The relationship between reading speed and comprehension is complex, with some studies suggesting that increasing speed beyond natural limits may reduce understanding and retention of material.
 
 Modern speed reading applications leverage technology to present text in optimal ways for rapid consumption. By chunking text into meaningful phrases and highlighting focus words, these tools help readers maintain comprehension while dramatically increasing their reading pace. The key is finding the right balance between speed and understanding for each individual reader.`;
+
+// Constants
+const MIN_WORD_COUNT = 10;
+const LARGE_TEXT_THRESHOLD = 100000;
+const OCR_CONFIDENCE_THRESHOLD = 60;
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
@@ -17,6 +32,8 @@ const App: React.FC = () => {
   const [showInput, setShowInput] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('text');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const safeChunks = chunks || [];
@@ -37,7 +54,7 @@ const App: React.FC = () => {
         setCurrentIndex(currentIndex + 1);
       } else {
         setIsPlaying(false);
-        alert('Reading complete!');
+        toast.success('Reading complete!');
       }
     }, msPerChunk);
 
@@ -77,13 +94,18 @@ const App: React.FC = () => {
 
   const handleParse = async () => {
     if (!inputText.trim()) {
-      alert('Please enter some text');
+      toast.error('Please enter some text');
       return;
     }
     const wordCount = inputText.trim().split(/\s+/).length;
-    if (wordCount < 10) {
-      alert('Please enter at least 10 words');
+    if (wordCount < MIN_WORD_COUNT) {
+      toast.error(`Please enter at least ${MIN_WORD_COUNT} words`);
       return;
+    }
+
+    // Warn for very long text (PRD: 100k+ words)
+    if (wordCount > LARGE_TEXT_THRESHOLD) {
+      toast.warning(`This is a very long text (${wordCount.toLocaleString()} words). Processing may take a moment.`);
     }
 
     setIsParsing(true);
@@ -93,9 +115,13 @@ const App: React.FC = () => {
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      
+      // Calculate and show estimated reading time
+      const estimatedMinutes = Math.round(wordCount / safeWpm);
+      toast.success(`Ready to read! Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
     } catch (err) {
       console.error(err);
-      alert('Failed to parse text');
+      toast.error('Failed to parse text. Please try again.');
     } finally {
       setIsParsing(false);
     }
@@ -104,22 +130,38 @@ const App: React.FC = () => {
   const handleImageUpload = async (file: File) => {
     setIsParsing(true);
     setOcrProgress(0);
+    setOcrConfidence(null);
 
     try {
       const { text, confidence } = await runOcrOnFile(file, 'eng', p => setOcrProgress(Math.round(p * 100)));
       if (!text) {
-        alert('No text detected in image');
+        toast.error('No text detected in image');
+        setIsParsing(false);
+        setOcrProgress(0);
         return;
       }
-      console.log(`OCR confidence: ${confidence}`);
+      setOcrConfidence(confidence);
       setInputText(text);
+      
+      // Don't auto-parse if confidence is low
+      if (confidence < OCR_CONFIDENCE_THRESHOLD) {
+        toast.warning('Low OCR confidence. Please review the extracted text before reading.');
+        setIsParsing(false);
+        setOcrProgress(0);
+        return;
+      }
+      
       const parsed = await parseTextIntoChunks(text);
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      
+      const wordCount = text.trim().split(/\s+/).length;
+      const estimatedMinutes = Math.round(wordCount / safeWpm);
+      toast.success(`Text extracted! Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
     } catch (err) {
       console.error(err);
-      alert('Failed to process image');
+      toast.error('Failed to process image. Please try again.');
     } finally {
       setIsParsing(false);
       setOcrProgress(0);
@@ -156,10 +198,13 @@ const App: React.FC = () => {
     setInputText('');
     setChunks([]);
     setCurrentIndex(0);
+    setOcrConfidence(null);
+    setActiveTab('text');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 flex flex-col">
+      <Toaster richColors position="top-center" />
       <header className="border-b border-slate-800 bg-black/40 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
@@ -167,12 +212,13 @@ const App: React.FC = () => {
             <span className="text-slate-200">AI Reader</span>
           </h1>
           {safeChunks.length > 0 && (
-            <button
+            <Button
               onClick={handleNewText}
-              className="px-3 py-1.5 text-sm rounded-md border border-slate-600 hover:bg-slate-800"
+              variant="outline"
+              size="sm"
             >
               New Text
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -185,19 +231,18 @@ const App: React.FC = () => {
               <div className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-3">
                 {isPlaying ? 'Reading…' : 'Paused'}
               </div>
-              <div className="flex flex-wrap justify-center gap-3 text-4xl md:text-5xl font-semibold">
-                {currentChunk.words.map((w, idx) => (
-                  <span
-                    key={idx}
-                    className={
-                      idx === currentChunk.focusIndex
-                        ? 'text-blue-400 drop-shadow'
-                        : 'text-slate-100/80'
-                    }
-                  >
-                    {w}
-                  </span>
-                ))}
+              <div className="flex flex-wrap justify-center gap-3 text-3xl md:text-4xl lg:text-5xl font-semibold">
+                {currentChunk.words.map((w, idx) => {
+                  const isFocusWord = idx === currentChunk.focusIndex;
+                  return (
+                    <span
+                      key={idx}
+                      className={`word-transition ${isFocusWord ? 'text-blue-400 reading-focus' : 'text-slate-100/80'}`}
+                    >
+                      {w}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -211,12 +256,7 @@ const App: React.FC = () => {
         {safeChunks.length > 0 && (
           <div className="space-y-6">
             <div className="space-y-2">
-              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all"
-                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                />
-              </div>
+              <Progress value={Math.min(100, Math.max(0, progress))} />
               <div className="flex justify-between text-xs text-slate-400">
                 <span>{Math.round(progress)}% complete</span>
                 <span>
@@ -225,67 +265,68 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-6">
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                  onClick={skipBackward}
-                  disabled={currentIndex === 0}
-                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800 disabled:opacity-40"
-                >
-                  ⬅ Skip Back
-                </button>
-                <button
-                  onClick={() => setIsPlaying(p => !p)}
-                  className="px-4 py-2 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white font-medium"
-                >
-                  {isPlaying ? '⏸ Pause' : '▶ Play'}
-                </button>
-                <button
-                  onClick={skipForward}
-                  disabled={currentIndex === safeChunks.length - 1}
-                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800 disabled:opacity-40"
-                >
-                  Skip Forward ➡
-                </button>
-                <button
-                  onClick={restart}
-                  className="px-3 py-2 text-sm rounded-md border border-slate-600 hover:bg-slate-800"
-                >
-                  ⟲ Restart
-                </button>
-              </div>
+            <Card className="bg-slate-900/70">
+              <CardContent className="space-y-6">
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    onClick={skipBackward}
+                    disabled={currentIndex === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    ⬅ Skip Back
+                  </Button>
+                  <Button
+                    onClick={() => setIsPlaying(p => !p)}
+                    size="default"
+                  >
+                    {isPlaying ? '⏸ Pause' : '▶ Play'}
+                  </Button>
+                  <Button
+                    onClick={skipForward}
+                    disabled={currentIndex === safeChunks.length - 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Skip Forward ➡
+                  </Button>
+                  <Button
+                    onClick={restart}
+                    variant="outline"
+                    size="sm"
+                  >
+                    ⟲ Restart
+                  </Button>
+                </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Reading speed</span>
-                  <span className="text-3xl font-semibold text-blue-400">{safeWpm}</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Reading speed</span>
+                    <span className="text-3xl font-semibold text-blue-400">{safeWpm}</span>
+                  </div>
+                  <Slider
+                    min={200}
+                    max={1000}
+                    step={50}
+                    value={[safeWpm]}
+                    onValueChange={(values) => setWpm(values[0])}
+                  />
+                  <div className="flex gap-2">
+                    {[300, 500, 700].map(spd => (
+                      <Button
+                        key={spd}
+                        onClick={() => setWpm(spd)}
+                        variant={safeWpm === spd ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        {spd} WPM
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={200}
-                  max={1000}
-                  step={50}
-                  value={safeWpm}
-                  onChange={e => setWpm(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex gap-2">
-                  {[300, 500, 700].map(spd => (
-                    <button
-                      key={spd}
-                      onClick={() => setWpm(spd)}
-                      className={`flex-1 px-3 py-1.5 text-sm rounded-md border ${
-                        safeWpm === spd
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'border-slate-600 text-slate-200 hover:bg-slate-800'
-                      }`}
-                    >
-                      {spd} WPM
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             <p className="text-center text-xs text-slate-500">
               Keyboard: Space = Play/Pause • ← / → = Skip • R = Restart • {wordsRead}/{totalWords}{' '}
@@ -296,79 +337,102 @@ const App: React.FC = () => {
 
         {/* Input dialog */}
         {showInput && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="w-full max-w-2xl mx-4 rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4">
-              <h2 className="text-lg font-semibold mb-2">Start a New Reading Session</h2>
+          <Dialog open={showInput} onOpenChange={setShowInput}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Start a New Reading Session</DialogTitle>
+              </DialogHeader>
 
-              <div className="flex gap-2 text-sm mb-2">
-                <button
-                  className="px-3 py-1.5 rounded-md bg-blue-500 text-white"
-                  onClick={() => setInputText(SAMPLE_TEXT)}
-                >
-                  Load Sample Text
-                </button>
-              </div>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="text">Text Input</TabsTrigger>
+                  <TabsTrigger value="image">Image Upload</TabsTrigger>
+                </TabsList>
 
-              <textarea
-                placeholder="Paste your text here…"
-                value={inputText}
-                onChange={e => setInputText(e.target.value)}
-                className="w-full min-h-[180px] rounded-md border border-slate-700 bg-slate-950/60 text-sm px-3 py-2 text-slate-100"
-              />
-
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>
-                  {inputText.trim().split(/\s+/).filter(Boolean).length} words
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleParse}
-                    disabled={isParsing}
-                    className="px-3 py-1.5 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
-                  >
-                    {isParsing ? 'Parsing…' : 'Start Reading'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-slate-800 pt-4 space-y-3">
-                <p className="text-xs text-slate-400">Or upload an image with text:</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="text-xs text-slate-300"
-                />
-                {isParsing && (
-                  <div className="space-y-1">
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 transition-all"
-                        style={{ width: `${ocrProgress}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-400">{ocrProgress}%</p>
+                <TabsContent value="text" className="space-y-4 mt-4">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setInputText(SAMPLE_TEXT)}
+                    >
+                      Load Sample Text
+                    </Button>
                   </div>
-                )}
-              </div>
 
-              <div className="flex justify-end mt-2">
-                <button
-                  onClick={() => {
-                    if (chunks.length > 0) {
-                      setShowInput(false);
-                    } else {
-                      handleNewText();
-                    }
-                  }}
-                  className="text-xs text-slate-400 hover:text-slate-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+                  <Textarea
+                    placeholder="Paste your text here…"
+                    value={inputText}
+                    onChange={e => setInputText(e.target.value)}
+                    className="min-h-[180px]"
+                  />
+
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>
+                      {inputText.trim().split(/\s+/).filter(Boolean).length} words
+                    </span>
+                    <Button
+                      onClick={handleParse}
+                      disabled={isParsing}
+                      size="sm"
+                    >
+                      {isParsing ? 'Parsing…' : 'Start Reading'}
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="image" className="space-y-4 mt-4">
+                  <Alert>
+                    <AlertDescription>
+                      Upload an image with text to extract and read. Supported formats: JPG, PNG, etc.
+                    </AlertDescription>
+                  </Alert>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="text-xs text-slate-300 w-full"
+                  />
+
+                  {isParsing && (
+                    <div className="space-y-2">
+                      <Progress value={ocrProgress} />
+                      <p className="text-xs text-slate-400 text-center">{ocrProgress}% - Processing image...</p>
+                    </div>
+                  )}
+
+                  {ocrConfidence !== null && (
+                    <Alert variant={ocrConfidence < OCR_CONFIDENCE_THRESHOLD ? 'destructive' : 'default'}>
+                      <AlertDescription>
+                        OCR Confidence: {Math.round(ocrConfidence)}%
+                        {ocrConfidence < OCR_CONFIDENCE_THRESHOLD && ' - Low confidence detected. You may want to review the extracted text.'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {inputText && activeTab === 'image' && !isParsing && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-400">Extracted text ({inputText.trim().split(/\s+/).filter(Boolean).length} words):</p>
+                      <Textarea
+                        value={inputText}
+                        onChange={e => setInputText(e.target.value)}
+                        className="min-h-[120px]"
+                      />
+                      <Button
+                        onClick={handleParse}
+                        disabled={isParsing}
+                        size="sm"
+                        className="w-full"
+                      >
+                        {isParsing ? 'Parsing…' : 'Start Reading'}
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
         )}
       </main>
     </div>
