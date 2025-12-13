@@ -18,6 +18,11 @@ Research has shown that skilled readers can read at rates of up to 1000 words pe
 
 Modern speed reading applications leverage technology to present text in optimal ways for rapid consumption. By chunking text into meaningful phrases and highlighting focus words, these tools help readers maintain comprehension while dramatically increasing their reading pace. The key is finding the right balance between speed and understanding for each individual reader.`;
 
+// Constants
+const MIN_WORD_COUNT = 10;
+const LARGE_TEXT_THRESHOLD = 100000;
+const OCR_CONFIDENCE_THRESHOLD = 60;
+
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [chunks, setChunks] = useState<TextChunk[]>([]);
@@ -93,13 +98,13 @@ const App: React.FC = () => {
       return;
     }
     const wordCount = inputText.trim().split(/\s+/).length;
-    if (wordCount < 10) {
-      toast.error('Please enter at least 10 words');
+    if (wordCount < MIN_WORD_COUNT) {
+      toast.error(`Please enter at least ${MIN_WORD_COUNT} words`);
       return;
     }
 
     // Warn for very long text (PRD: 100k+ words)
-    if (wordCount > 100000) {
+    if (wordCount > LARGE_TEXT_THRESHOLD) {
       toast.warning(`This is a very long text (${wordCount.toLocaleString()} words). Processing may take a moment.`);
     }
 
@@ -139,7 +144,7 @@ const App: React.FC = () => {
       setInputText(text);
       
       // Don't auto-parse if confidence is low
-      if (confidence < 60) {
+      if (confidence < OCR_CONFIDENCE_THRESHOLD) {
         toast.warning('Low OCR confidence. Please review the extracted text before reading.');
         setIsParsing(false);
         setOcrProgress(0);
@@ -227,18 +232,17 @@ const App: React.FC = () => {
                 {isPlaying ? 'Reading…' : 'Paused'}
               </div>
               <div className="flex flex-wrap justify-center gap-3 text-3xl md:text-4xl lg:text-5xl font-semibold">
-                {currentChunk.words.map((w, idx) => (
-                  <span
-                    key={idx}
-                    className={`word-transition ${
-                      idx === currentChunk.focusIndex
-                        ? 'text-blue-400 reading-focus'
-                        : 'text-slate-100/80'
-                    }`}
-                  >
-                    {w}
-                  </span>
-                ))}
+                {currentChunk.words.map((w, idx) => {
+                  const isFocusWord = idx === currentChunk.focusIndex;
+                  return (
+                    <span
+                      key={idx}
+                      className={`word-transition ${isFocusWord ? 'text-blue-400 reading-focus' : 'text-slate-100/80'}`}
+                    >
+                      {w}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -399,10 +403,10 @@ const App: React.FC = () => {
                   )}
 
                   {ocrConfidence !== null && (
-                    <Alert variant={ocrConfidence < 60 ? 'destructive' : 'default'}>
+                    <Alert variant={ocrConfidence < OCR_CONFIDENCE_THRESHOLD ? 'destructive' : 'default'}>
                       <AlertDescription>
                         OCR Confidence: {Math.round(ocrConfidence)}%
-                        {ocrConfidence < 60 && ' - Low confidence detected. You may want to review the extracted text.'}
+                        {ocrConfidence < OCR_CONFIDENCE_THRESHOLD && ' - Low confidence detected. You may want to review the extracted text.'}
                       </AlertDescription>
                     </Alert>
                   )}
