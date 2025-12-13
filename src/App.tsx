@@ -9,6 +9,8 @@ import { Textarea } from './components/ui/textarea';
 import { Card, CardContent } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Alert, AlertDescription } from './components/ui/alert';
+import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 
 const SAMPLE_TEXT = `Speed reading is a collection of techniques that aim to increase reading speed without greatly reducing comprehension or retention. Methods include skimming, meta guiding, and eliminating subvocalization. The many available speed reading training programs may utilize books, videos, software, and seminars. The most effective techniques often involve training the eyes to make shorter fixations and broader saccades across the text.
 
@@ -47,7 +49,7 @@ const App: React.FC = () => {
         setCurrentIndex(currentIndex + 1);
       } else {
         setIsPlaying(false);
-        alert('Reading complete!');
+        toast.success('Reading complete!');
       }
     }, msPerChunk);
 
@@ -87,13 +89,18 @@ const App: React.FC = () => {
 
   const handleParse = async () => {
     if (!inputText.trim()) {
-      alert('Please enter some text');
+      toast.error('Please enter some text');
       return;
     }
     const wordCount = inputText.trim().split(/\s+/).length;
     if (wordCount < 10) {
-      alert('Please enter at least 10 words');
+      toast.error('Please enter at least 10 words');
       return;
+    }
+
+    // Warn for very long text (PRD: 100k+ words)
+    if (wordCount > 100000) {
+      toast.warning(`This is a very long text (${wordCount.toLocaleString()} words). Processing may take a moment.`);
     }
 
     setIsParsing(true);
@@ -103,9 +110,13 @@ const App: React.FC = () => {
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      
+      // Calculate and show estimated reading time
+      const estimatedMinutes = Math.round(wordCount / safeWpm);
+      toast.success(`Ready to read! Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
     } catch (err) {
       console.error(err);
-      alert('Failed to parse text');
+      toast.error('Failed to parse text. Please try again.');
     } finally {
       setIsParsing(false);
     }
@@ -119,18 +130,33 @@ const App: React.FC = () => {
     try {
       const { text, confidence } = await runOcrOnFile(file, 'eng', p => setOcrProgress(Math.round(p * 100)));
       if (!text) {
-        alert('No text detected in image');
+        toast.error('No text detected in image');
+        setIsParsing(false);
+        setOcrProgress(0);
         return;
       }
       setOcrConfidence(confidence);
       setInputText(text);
+      
+      // Don't auto-parse if confidence is low
+      if (confidence < 60) {
+        toast.warning('Low OCR confidence. Please review the extracted text before reading.');
+        setIsParsing(false);
+        setOcrProgress(0);
+        return;
+      }
+      
       const parsed = await parseTextIntoChunks(text);
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      
+      const wordCount = text.trim().split(/\s+/).length;
+      const estimatedMinutes = Math.round(wordCount / safeWpm);
+      toast.success(`Text extracted! Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
     } catch (err) {
       console.error(err);
-      alert('Failed to process image');
+      toast.error('Failed to process image. Please try again.');
     } finally {
       setIsParsing(false);
       setOcrProgress(0);
@@ -173,6 +199,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 flex flex-col">
+      <Toaster richColors position="top-center" />
       <header className="border-b border-slate-800 bg-black/40 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
