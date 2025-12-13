@@ -226,15 +226,15 @@ const App: React.FC = () => {
               <div className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-3">
                 {isPlaying ? 'Reading…' : 'Paused'}
               </div>
-              <div className="flex flex-wrap justify-center gap-3 text-4xl md:text-5xl font-semibold">
+              <div className="flex flex-wrap justify-center gap-3 text-3xl md:text-4xl lg:text-5xl font-semibold">
                 {currentChunk.words.map((w, idx) => (
                   <span
                     key={idx}
-                    className={
+                    className={`word-transition ${
                       idx === currentChunk.focusIndex
-                        ? 'text-blue-400 drop-shadow'
+                        ? 'text-blue-400 reading-focus'
                         : 'text-slate-100/80'
-                    }
+                    }`}
                   >
                     {w}
                   </span>
