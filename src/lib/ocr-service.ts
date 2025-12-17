@@ -1,4 +1,4 @@
-import Tesseract, { type RecognizeResult } from "tesseract.js";
+import { recognize, createWorker, type RecognizeResult } from "tesseract.js";
 
 export interface OcrWord {
   text: string;
@@ -23,7 +23,7 @@ export async function runOcrOnImageFile(
   lang: string = "eng",
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
-  const result = await Tesseract.recognize(filePath, lang, {
+  const result = await recognize(filePath, lang, {
     logger: msg => {
       if (msg.status === "recognizing text" && onProgress) {
         onProgress(msg.progress);
@@ -40,7 +40,7 @@ export async function runOcrOnImageBuffer(
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
   const blob = bufferToBlob(input);
-  const result = await Tesseract.recognize(blob, lang, {
+  const result = await recognize(blob, lang, {
     logger: msg => {
       if (msg.status === "recognizing text" && onProgress) {
         onProgress(msg.progress);
@@ -56,7 +56,7 @@ export async function runOcrOnFile(
   lang: string = "eng",
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
-  const result = await Tesseract.recognize(file, lang, {
+  const result = await recognize(file, lang, {
     logger: msg => {
       if (msg.status === "recognizing text" && onProgress) {
         onProgress(msg.progress);

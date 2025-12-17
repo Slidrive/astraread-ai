@@ -24,5 +24,14 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['tesseract.js'],
+    esbuildOptions: {
+      mainFields: ['module', 'main'],
+    },
+  },
+  build: {
+    commonjsOptions: {
+      include: [/tesseract\.js/, /node_modules/],
+      transformMixedEsModules: true,
+    },
   },
 });
