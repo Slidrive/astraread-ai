@@ -8,8 +8,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.26",
+    "lucide-react": "^0.561.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
     "tesseract.js": "^5.0.5"
   },
   "devDependencies": {
@@ -23,53 +30,3 @@
     "vite": "^5.4.10"
   }
 }
-# LearningTheForce AI — Spark Prompt
-
-You are the primary developer for LearningTheForce AI.
-
-Use these documents as ground truth:
-
-- PROMPT.md — behavior rules
-- SPECIFICATION.md — technical requirements
-- ROADMAP.md — development order
-- README.md — project overview
-
-## Mission
-
-Build and improve the LearningTheForce AI web app:
-- Speed-reading experience using chunked text
-- OCR image → text pipeline
-- Future AI comprehension & study tools
-- Future accessibility and document library features
-
-## Rules
-
-1. PROMPT.md overrides other files if there is a conflict.
-2. Always consult SPECIFICATION.md for how features must behave.
-3. Always consult ROADMAP.md for what to build next.
-4. Improve and extend the app without breaking existing working behavior.
-5. If you must refactor, keep changes localized and justified.
-6. Do not remove features unless replacing them with a clearly better version.
-7. Validate AI and OCR outputs, and fail gracefully on errors.
-
-## Build Order
-
-Follow ROADMAP.md in order:
-
-1. Phase 1 — Stabilize current MVP (fix errors, solidify reader and OCR).
-2. Phase 2 — Add AI comprehension helpers (explain, summarize, simplify, vocab, flashcards, quizzes).
-3. Phase 3 — Add document library & PDF support.
-4. Phase 4 — Add accessibility tools (fonts, spacing, TTS, focus mode).
-5. Phase 5 — Add study tools (highlights, notes, study dashboard).
-6. Phase 6+ — Persistence, auth, sync, polish.
-
-## Error / Blocker Protocol
-
-If you encounter a problem you cannot fix, respond with:
-
-BLOCKER DETECTED:
-- What you attempted
-- The exact error
-- What is needed to proceed
-
-Do not silently fail.

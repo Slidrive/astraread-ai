@@ -1,26 +1,26 @@
 import * as Tesseract from "tesseract.js";
 import type { RecognizeResult } from "tesseract.js";
 
+export interface OcrWord {
+  text: string;
   confidence: number;
-    x0: number;
-    x1: number;
   bbox: {
     x0: number;
     y0: number;
     x1: number;
     y1: number;
   };
- 
-
-export async function runOcr
-  lang: string 
-): Promise<OcrResult>
-    logger: msg => 
-        onProgress(msg.p
- 
-
 }
-export async functi
+
+export interface OcrResult {
+  text: string;
+  confidence: number;
+  words: OcrWord[];
+  raw?: RecognizeResult;
+}
+
+export async function runOcrOnFile(
+  filePath: string | File,
   lang: string = "eng",
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
@@ -30,10 +30,10 @@ export async functi
         onProgress(msg.progress);
       }
     },
+  });
 
-
-export async function runOcrOnFile(
- 
+  return normalizeOcrResult(result);
+}
 
 export async function runOcrOnImageBuffer(
   input: ArrayBuffer | Uint8Array,
@@ -52,47 +52,30 @@ export async function runOcrOnImageBuffer(
   return normalizeOcrResult(result);
 }
 
-    for (const w of pageData.words)
-        text:
+function normalizeOcrResult(result: RecognizeResult): OcrResult {
+  const fullText = (result.data.text || "").trim();
+  const pageData = result.data;
+
+  const words: OcrWord[] = [];
+  if (pageData.words) {
+    for (const w of pageData.words) {
+      words.push({
+        text: w.text,
+        confidence: w.confidence,
         bbox: {
+          x0: w.bbox.x0,
           y0: w.bbox.y0,
-          y1: w.bbox.y1
+          x1: w.bbox.x1,
+          y1: w.bbox.y1,
+        },
       });
+    }
   }
+
   const avgConfidence =
-      ? words.reduce((sum, w) => 
-
-    te
-    w
-
-
- 
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    words.length > 0
+      ? words.reduce((sum, w) => sum + w.confidence, 0) / words.length
+      : pageData.confidence ?? 0;
 
   return {
     text: fullText,
@@ -106,5 +89,8 @@ function bufferToBlob(
   input: ArrayBuffer | Uint8Array,
   type: string = "image/png"
 ): Blob {
-  return new Blob([input as any], { type });
+  if (input instanceof ArrayBuffer) {
+    return new Blob([input], { type });
+  }
+  return new Blob([input as Uint8Array<ArrayBuffer>], { type });
 }
