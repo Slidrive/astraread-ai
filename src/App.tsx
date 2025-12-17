@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { parseTextIntoChunks, TextChunk } from './lib/text-parser';
 import { runOcrOnFile } from './lib/ocr-service';
+import { Toaster, toast } from 'sonner';
 
 const SAMPLE_TEXT = `Speed reading is a collection of techniques that aim to increase reading speed without greatly reducing comprehension or retention. Methods include skimming, meta guiding, and eliminating subvocalization. The many available speed reading training programs may utilize books, videos, software, and seminars. The most effective techniques often involve training the eyes to make shorter fixations and broader saccades across the text.
 
@@ -37,7 +38,7 @@ const App: React.FC = () => {
         setCurrentIndex(currentIndex + 1);
       } else {
         setIsPlaying(false);
-        alert('Reading complete!');
+        toast.success('Reading complete!');
       }
     }, msPerChunk);
 
@@ -77,12 +78,12 @@ const App: React.FC = () => {
 
   const handleParse = async () => {
     if (!inputText.trim()) {
-      alert('Please enter some text');
+      toast.error('Please enter some text');
       return;
     }
     const wordCount = inputText.trim().split(/\s+/).length;
     if (wordCount < 10) {
-      alert('Please enter at least 10 words');
+      toast.error('Please enter at least 10 words');
       return;
     }
 
@@ -93,9 +94,10 @@ const App: React.FC = () => {
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      toast.success('Text loaded successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to parse text');
+      toast.error('Failed to parse text');
     } finally {
       setIsParsing(false);
     }
@@ -108,7 +110,7 @@ const App: React.FC = () => {
     try {
       const { text, confidence } = await runOcrOnFile(file, 'eng', p => setOcrProgress(Math.round(p * 100)));
       if (!text) {
-        alert('No text detected in image');
+        toast.error('No text detected in image');
         return;
       }
       console.log(`OCR confidence: ${confidence}`);
@@ -117,9 +119,10 @@ const App: React.FC = () => {
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
+      toast.success(`Text extracted successfully! (${confidence.toFixed(0)}% confidence)`);
     } catch (err) {
       console.error(err);
-      alert('Failed to process image');
+      toast.error('Failed to process image');
     } finally {
       setIsParsing(false);
       setOcrProgress(0);
@@ -160,6 +163,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 flex flex-col">
+      <Toaster position="top-center" richColors />
       <header className="border-b border-slate-800 bg-black/40 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
