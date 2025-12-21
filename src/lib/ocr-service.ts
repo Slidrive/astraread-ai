@@ -1,5 +1,4 @@
-import * as Tesseract from "tesseract.js";
-import type { RecognizeResult } from "tesseract.js";
+import Tesseract, { type RecognizeResult } from "tesseract.js";
 
 export interface OcrWord {
   text: string;
