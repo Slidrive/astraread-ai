@@ -1,37 +1,37 @@
 import Tesseract, { type RecognizeResult } from "tesseract.js";
 
-export interface OcrWord {
-  text: string;
   confidence: number;
-  bbox: {
     x0: number;
-    y0: number;
     x1: number;
-    y1: number;
   };
-}
 
-export interface OcrResult {
   text: string;
-  confidence: number;
+  words: OcrWor
+}
+expo
+ 
+
+    logger: msg => {
+        onProgr
+    },
   words: OcrWord[];
   raw?: RecognizeResult;
-}
+
 
 export async function runOcrOnFile(
   filePath: string | File,
   lang: string = "eng",
   onProgress?: (progress: number) => void
-): Promise<OcrResult> {
+      if (msg.status ==
   const result = await Tesseract.recognize(filePath, lang, {
     logger: msg => {
       if (msg.status === "recognizing text" && onProgress) {
         onProgress(msg.progress);
-      }
-    },
-  });
 
-  return normalizeOcrResult(result);
+    },
+  con
+
+  if (pageData.words) {
 }
 
 export async function runOcrOnImageBuffer(
@@ -52,7 +52,7 @@ export async function runOcrOnImageBuffer(
 }
 
 function normalizeOcrResult(result: RecognizeResult): OcrResult {
-  const fullText = (result.data.text || "").trim();
+    words,
   const pageData = result.data;
 
   const words: OcrWord[] = [];
@@ -64,7 +64,7 @@ function normalizeOcrResult(result: RecognizeResult): OcrResult {
         bbox: {
           x0: w.bbox.x0,
           y0: w.bbox.y0,
-          x1: w.bbox.x1,
+
           y1: w.bbox.y1,
         },
       });
@@ -72,24 +72,24 @@ function normalizeOcrResult(result: RecognizeResult): OcrResult {
   }
 
   const avgConfidence =
-    words.length > 0
+
       ? words.reduce((sum, w) => sum + w.confidence, 0) / words.length
       : pageData.confidence ?? 0;
 
-  return {
+
     text: fullText,
     confidence: avgConfidence,
     words,
-    raw: result,
+
   };
-}
+
 
 function bufferToBlob(
   input: ArrayBuffer | Uint8Array,
-  type: string = "image/png"
+
 ): Blob {
   if (input instanceof ArrayBuffer) {
     return new Blob([input], { type });
-  }
+
   return new Blob([input as Uint8Array<ArrayBuffer>], { type });
-}
+
