@@ -261,7 +261,7 @@ const App: React.FC = () => {
             </div>
 
             <Card className="bg-slate-900/70 border-slate-800">
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 py-6">
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button
                     onClick={skipBackward}
