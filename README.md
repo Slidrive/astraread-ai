@@ -1,75 +1,121 @@
 # LearningTheForce AI Reader
 
-An AI-powered speed reading application with OCR support, intelligent text chunking, and synchronized highlighting.
+A modern, AI-powered speed reading application with advanced OCR support, intelligent text chunking, and smooth animations. Built with React, TypeScript, and shadcn/ui components.
 
 ## Features
 
-- **Speed Reading**: Variable speed text display (200-1000 WPM)
-- **OCR Support**: Extract text from images using Tesseract.js
-- **Smart Chunking**: AI-powered text chunking for optimal reading flow
-- **Synchronized Highlighting**: Visual focus on current reading position
-- **Keyboard Controls**: Space (play/pause), Arrow keys (skip), R (restart)
+### Core Reading Features
+- **Variable Speed Reading**: Adjustable reading speed from 200-1000 WPM
+- **Smart Text Chunking**: AI-powered phrase chunking for optimal reading flow
+- **Visual Focus Highlighting**: Animated focus on key words with smooth transitions
+- **Progress Tracking**: Real-time progress bar with completion percentage and time remaining
+- **Keyboard Controls**: Full keyboard support for efficient navigation
 
-## Quick Start
+### Advanced Features
+- **OCR Text Extraction**: Extract text from images using Tesseract.js
+- **OCR Confidence Tracking**: Display confidence scores and warnings for low-quality extractions
+- **Editable OCR Output**: Review and edit extracted text before starting
+- **Tabbed Input Interface**: Separate tabs for text input and image upload
+- **Toast Notifications**: Professional feedback using Sonner
+- **Estimated Reading Time**: Calculate and display expected reading duration
+- **Responsive Design**: Optimized for desktop and mobile devices
 
-The app should work out of the box in the Spark environment. If you encounter the error:
+### Smart Edge Case Handling
+- Minimum word count validation (10 words)
+- Large text warnings (100,000+ words)
+- Low OCR confidence alerts (< 60%)
+- Manual review option for low-confidence extractions
+- Smooth animations and transitions for better UX
 
+## Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
-ENOENT: no such file or directory, open '.../node_modules/@vitejs/plugin-react-swc/refresh-runtime.js'
-```
 
-**This is a Vite cache issue.** The fix is to clear Vite's dependency cache:
+## Technology Stack
 
-### Fix for SWC/React Plugin Error
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **shadcn/ui** - Modern UI component library
+- **Radix UI** - Headless UI primitives
+- **Tailwind CSS** - Utility-first styling
+- **Tesseract.js** - Browser-based OCR
+- **Sonner** - Toast notifications
+- **Lucide React** - Icon library
 
-1. Stop the dev server if running
-2. Delete the Vite cache directory:
-   ```bash
-   rm -rf node_modules/.vite
-   ```
-3. Restart the dev server
+## Keyboard Shortcuts
 
-The error occurs when Vite's pre-bundling cache has a stale reference to the SWC variant of the React plugin. This project uses `@vitejs/plugin-react` (not the SWC version), and clearing the cache forces Vite to rebuild with the correct dependencies.
+| Key | Action |
+|-----|--------|
+| `Space` | Play/Pause reading |
+| `←` | Skip backward (10 chunks) |
+| `→` | Skip forward (10 chunks) |
+| `R` | Restart from beginning |
 
-## Architecture
+## Usage
 
-- **React + TypeScript**: UI built with shadcn components
-- **Tesseract.js**: Browser-based OCR
-- **OpenAI API**: Smart text chunking for optimal reading
-- **Tailwind CSS**: Styling with custom theme
+### Text Input
+1. Click "Start a New Reading Session" or use the "New Text" button
+2. Select the "Text Input" tab
+3. Paste your text or click "Load Sample Text"
+4. Click "Start Reading" to begin
+5. Use spacebar to play/pause, arrow keys to navigate
 
-## Project Structure
+### Image Upload
+1. Click "Start a New Reading Session"
+2. Select the "Image Upload" tab
+3. Upload an image containing text
+4. Wait for OCR processing to complete
+5. Review the extracted text and confidence score
+6. Edit if needed, then click "Start Reading"
 
-```
-src/
-├── App.tsx              # Main application component
-├── components/          # React components
-│   └── ui/             # shadcn UI components
-├── lib/
-│   ├── ocr-service.ts  # OCR functionality
-│   ├── text-parser.ts  # Text chunking logic
-│   └── utils.ts        # Utility functions
-└── styles/             # CSS and theming
-```
+### Speed Control
+- Use the slider to adjust reading speed (200-1000 WPM)
+- Click preset buttons for quick speed selection (300, 500, 700 WPM)
+- Real-time preview shows estimated reading time
+
+## Development Best Practices
+
+- **Type Safety**: All components use TypeScript for compile-time safety
+- **Component Reusability**: shadcn/ui components for consistent design
+- **Accessibility**: Proper ARIA labels and keyboard navigation
+- **Performance**: Optimized animations and smooth transitions
+- **Error Handling**: Comprehensive validation and user feedback
+- **Mobile-First**: Responsive design with proper touch targets
 
 ## Troubleshooting
 
-### Vite Module Resolution Errors
-
-If you see errors about missing Vite modules or plugins:
-
-1. Clear the Vite cache: `rm -rf node_modules/.vite`
-2. Clear npm cache: `npm cache clean --force`  
-3. Reinstall dependencies: `rm -rf node_modules && npm install`
-4. Restart the dev server
+### Vite Cache Issues
+If you see module resolution errors:
+```bash
+rm -rf node_modules/.vite
+npm run dev
+```
 
 ### OCR Not Working
+- Ensure image has clear, readable text
+- Check OCR confidence score in the toast notification
+- Try editing the extracted text if confidence is low
 
-Make sure you're uploading a clear image with readable text. The OCR confidence score will show in the toast notification after processing.
-
-### TypeScript Errors in UI Components
-
-The shadcn UI components may show TypeScript warnings about lucide-react imports or recharts types. These are non-critical type warnings and don't affect runtime functionality.
+### Build Errors
+```bash
+# Clean install
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
 
 ## License
 
