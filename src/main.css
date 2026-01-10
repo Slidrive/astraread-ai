@@ -12,3 +12,30 @@ body {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/* Custom animations for reading focus */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 16px rgba(96, 165, 250, 0.8);
+  }
+}
+
+.reading-focus {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.word-transition {
+  transition: opacity 120ms ease-in-out, transform 120ms ease-in-out;
+}
+
+/* Better mobile touch targets */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px;
+  }
+}
