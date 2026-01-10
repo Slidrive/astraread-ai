@@ -21,6 +21,11 @@ const MIN_WORD_COUNT = 10;
 const LARGE_TEXT_THRESHOLD = 100000;
 const OCR_CONFIDENCE_THRESHOLD = 60;
 
+const formatEstimatedTime = (wordCount: number, wpm: number): string => {
+  const estimatedMinutes = Math.round(wordCount / wpm);
+  return `Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${wpm} WPM`;
+};
+
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [chunks, setChunks] = useState<TextChunk[]>([]);
@@ -102,7 +107,9 @@ const App: React.FC = () => {
     }
 
     if (wordCount > LARGE_TEXT_THRESHOLD) {
-      toast.error(`Text is very long (${wordCount} words). This may take a while to process.`);
+      toast('Text is very long (' + wordCount + ' words). This may take a while to process.', {
+        duration: 5000,
+      });
     }
 
     setIsParsing(true);
@@ -112,8 +119,7 @@ const App: React.FC = () => {
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
-      const estimatedMinutes = Math.round(wordCount / safeWpm);
-      toast.success(`Ready to read! Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
+      toast.success(`Ready to read! ${formatEstimatedTime(wordCount, safeWpm)}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to parse text. Please try again.');
@@ -146,8 +152,7 @@ const App: React.FC = () => {
         setChunks(parsed);
         setCurrentIndex(0);
         setShowInput(false);
-        const estimatedMinutes = Math.round(wordCount / safeWpm);
-        toast.success(`Text extracted successfully! (${confidence.toFixed(0)}% confidence) Estimated time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${safeWpm} WPM`);
+        toast.success(`Text extracted successfully! (${confidence.toFixed(0)}% confidence) ${formatEstimatedTime(wordCount, safeWpm)}`);
       }
     } catch (err) {
       console.error(err);
