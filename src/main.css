@@ -16,10 +16,10 @@ body {
 /* Reading focus animations */
 @keyframes pulse-glow {
   0%, 100% {
-    text-shadow: 0 0 20px theme('colors.blue.400 / 0.5');
+    text-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
   }
   50% {
-    text-shadow: 0 0 30px theme('colors.blue.400 / 0.8');
+    text-shadow: 0 0 30px rgba(96, 165, 250, 0.8);
   }
 }
 
