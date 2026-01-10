@@ -12,14 +12,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/u
 import { Alert, AlertDescription } from './components/ui/alert';
 
 const MIN_WORD_COUNT = 10;
-const LARGE_TEXT_THRESHOLD = 100000;
 const OCR_CONFIDENCE_THRESHOLD = 60;
+const TAB_TEXT_INPUT = 'text';
+const TAB_IMAGE_UPLOAD = 'image';
 
 const SAMPLE_TEXT = `Speed reading is a collection of techniques that aim to increase reading speed without greatly reducing comprehension or retention. Methods include skimming, meta guiding, and eliminating subvocalization. The many available speed reading training programs may utilize books, videos, software, and seminars. The most effective techniques often involve training the eyes to make shorter fixations and broader saccades across the text.
 
 Research has shown that skilled readers can read at rates of up to 1000 words per minute, though average reading speeds are typically between 200 and 300 words per minute. The relationship between reading speed and comprehension is complex, with some studies suggesting that increasing speed beyond natural limits may reduce understanding and retention of material.
 
 Modern speed reading applications leverage technology to present text in optimal ways for rapid consumption. By chunking text into meaningful phrases and highlighting focus words, these tools help readers maintain comprehension while dramatically increasing their reading pace. The key is finding the right balance between speed and understanding for each individual reader.`;
+
+// Utility function to count words in text
+const getWordCount = (text: string): number => {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+};
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
@@ -31,7 +37,7 @@ const App: React.FC = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('text');
+  const [activeTab, setActiveTab] = useState<string>(TAB_TEXT_INPUT);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const safeChunks = chunks || [];
@@ -95,7 +101,7 @@ const App: React.FC = () => {
       toast.error('Please enter some text');
       return;
     }
-    const wordCount = inputText.trim().split(/\s+/).length;
+    const wordCount = getWordCount(inputText);
     if (wordCount < MIN_WORD_COUNT) {
       toast.error(`Please enter at least ${MIN_WORD_COUNT} words`);
       return;
@@ -137,7 +143,7 @@ const App: React.FC = () => {
         toast.error(`Low OCR confidence (${confidence.toFixed(0)}%). Please review the extracted text.`);
       }
       
-      const wordCount = text.trim().split(/\s+/).length;
+      const wordCount = getWordCount(text);
       const parsed = await parseTextIntoChunks(text);
       setChunks(parsed);
       setCurrentIndex(0);
@@ -330,11 +336,11 @@ const App: React.FC = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="text">Text Input</TabsTrigger>
-                <TabsTrigger value="image">Image Upload</TabsTrigger>
+                <TabsTrigger value={TAB_TEXT_INPUT}>Text Input</TabsTrigger>
+                <TabsTrigger value={TAB_IMAGE_UPLOAD}>Image Upload</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="text" className="space-y-4">
+              <TabsContent value={TAB_TEXT_INPUT} className="space-y-4">
                 <div className="flex gap-2 text-sm">
                   <Button
                     size="sm"
@@ -353,7 +359,7 @@ const App: React.FC = () => {
 
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span>
-                    {inputText.trim().split(/\s+/).filter(Boolean).length} words
+                    {getWordCount(inputText)} words
                   </span>
                   <Button
                     onClick={handleParse}
@@ -365,7 +371,7 @@ const App: React.FC = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="image" className="space-y-4">
+              <TabsContent value={TAB_IMAGE_UPLOAD} className="space-y-4">
                 <Alert>
                   <AlertDescription>
                     Upload an image containing text. The OCR will extract the text automatically.
@@ -396,9 +402,9 @@ const App: React.FC = () => {
                   </Alert>
                 )}
 
-                {inputText && activeTab === 'image' && (
+                {inputText && activeTab === TAB_IMAGE_UPLOAD && (
                   <div className="space-y-2">
-                    <p className="text-xs text-slate-400">Extracted text ({inputText.trim().split(/\s+/).filter(Boolean).length} words):</p>
+                    <p className="text-xs text-slate-400">Extracted text ({getWordCount(inputText)} words):</p>
                     <Textarea
                       value={inputText}
                       onChange={e => setInputText(e.target.value)}

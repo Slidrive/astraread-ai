@@ -127,8 +127,9 @@ src/
 
 ### Key Constants
 - `MIN_WORD_COUNT`: 10 words (minimum text length)
-- `LARGE_TEXT_THRESHOLD`: 100,000 characters
 - `OCR_CONFIDENCE_THRESHOLD`: 60% (minimum acceptable confidence)
+- `TAB_TEXT_INPUT`: 'text' (text input tab identifier)
+- `TAB_IMAGE_UPLOAD`: 'image' (image upload tab identifier)
 
 ### Running Tests
 ```bash
