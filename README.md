@@ -4,53 +4,73 @@ An AI-powered speed reading application with OCR support, intelligent text chunk
 
 ## Features
 
-- **Speed Reading**: Variable speed text display (200-1000 WPM)
+### Core Reading Features
+- **Variable Speed Reading**: Adjustable reading speed from 200-1000 WPM with smooth slider control
+- **Smart Text Chunking**: Intelligent phrase grouping for optimal reading flow
+- **Focus Word Highlighting**: Animated pulse-glow effect on the current focus word
+- **Playback Controls**: Play, pause, skip forward/backward, and restart functionality
+- **Progress Tracking**: Real-time progress bar with estimated reading time
+
+### Advanced Features
 - **OCR Support**: Extract text from images using Tesseract.js
-- **Smart Chunking**: AI-powered text chunking for optimal reading flow
-- **Synchronized Highlighting**: Visual focus on current reading position
-- **Keyboard Controls**: Space (play/pause), Arrow keys (skip), R (restart)
+- **OCR Confidence Display**: Shows extraction confidence percentage
+- **Low Confidence Warnings**: Alerts user when OCR confidence is below 60%
+- **Text Review**: Allows editing of extracted text before reading
+- **Tabbed Interface**: Separate tabs for text input vs image upload
+- **Keyboard Shortcuts**: Space (play/pause), Arrow keys (skip), R (restart)
 
-## Quick Start
+### Smart Edge Case Handling
+- **Minimum Word Count**: Validates at least 10 words before parsing
+- **Large Text Warning**: Alerts for texts exceeding 100,000 words
+- **Estimated Reading Time**: Calculates and displays reading duration at current WPM
+- **Toast Notifications**: User-friendly notifications replacing browser alerts
 
-The app should work out of the box in the Spark environment. If you encounter the error:
+## Installation
 
-```
-ENOENT: no such file or directory, open '.../node_modules/@vitejs/plugin-react-swc/refresh-runtime.js'
-```
-
-**This is a Vite cache issue.** The fix is to clear Vite's dependency cache:
-
-### Fix for SWC/React Plugin Error
-
-1. Stop the dev server if running
-2. Delete the Vite cache directory:
+1. Clone the repository:
    ```bash
-   rm -rf node_modules/.vite
+   git clone https://github.com/Slidrive/astraread-ai.git
+   cd astraread-ai
    ```
-3. Restart the dev server
 
-The error occurs when Vite's pre-bundling cache has a stale reference to the SWC variant of the React plugin. This project uses `@vitejs/plugin-react` (not the SWC version), and clearing the cache forces Vite to rebuild with the correct dependencies.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Architecture
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-- **React + TypeScript**: UI built with shadcn components
-- **Tesseract.js**: Browser-based OCR
-- **OpenAI API**: Smart text chunking for optimal reading
-- **Tailwind CSS**: Styling with custom theme
+4. Build for production:
+   ```bash
+   npm run build
+   ```
 
-## Project Structure
+## Technology Stack
 
-```
-src/
-├── App.tsx              # Main application component
-├── components/          # React components
-│   └── ui/             # shadcn UI components
-├── lib/
-│   ├── ocr-service.ts  # OCR functionality
-│   ├── text-parser.ts  # Text chunking logic
-│   └── utils.ts        # Utility functions
-└── styles/             # CSS and theming
-```
+- **React + TypeScript**: Modern UI framework with type safety
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: Utility-first CSS framework
+- **shadcn/ui**: High-quality React component library
+- **Tesseract.js**: Browser-based OCR engine
+- **Sonner**: Beautiful toast notifications
+
+## Keyboard Shortcuts
+
+- **Space**: Play/Pause reading
+- **← (Left Arrow)**: Skip backward 10 chunks
+- **→ (Right Arrow)**: Skip forward 10 chunks
+- **R**: Restart from beginning
+
+## Usage
+
+1. **Text Input**: Paste text directly or click "Load Sample Text" for a demo
+2. **Image Upload**: Upload an image containing text to extract via OCR
+3. **Adjust Speed**: Use the slider or preset buttons (300/500/700 WPM)
+4. **Start Reading**: Click "Start Reading" or use keyboard shortcuts
+5. **Track Progress**: Monitor reading progress with the visual progress bar
 
 ## Troubleshooting
 
