@@ -94,38 +94,7 @@ const App: React.FC = () => {
   }, [safeChunks.length, currentIndex]);
 
   const handleParse = async () => {
-    if (!inputText.trim()) {
-      toast.error('Please enter some text');
-      return;
-    }
-    const wordCount = inputText.trim().split(/\s+/).length;
-    if (wordCount < MIN_WORD_COUNT) {
-      toast.error(`Please enter at least ${MIN_WORD_COUNT} words`);
-      return;
-    }
-    
-    // Warn for large text
-    if (wordCount > LARGE_TEXT_THRESHOLD) {
-      toast.warning(`Processing ${wordCount.toLocaleString()} words. This may take a moment...`);
-    }
-
-    setIsParsing(true);
-
-    try {
-      const parsed = await parseTextIntoChunks(inputText);
-      setChunks(parsed);
-      setCurrentIndex(0);
-      setShowInput(false);
-      
-      // Calculate estimated reading time
-      const estimatedMinutes = Math.ceil(wordCount / wpm);
-      toast.success(`Text loaded successfully! Estimated reading time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${wpm} WPM`);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to parse text');
-    } finally {
-      setIsParsing(false);
-    }
+    await validateAndParseText(inputText);
   };
 
   const handleImageUpload = async (file: File) => {
@@ -206,26 +175,38 @@ const App: React.FC = () => {
     setExtractedText('');
   };
   
-  const handleStartReadingExtracted = async () => {
-    if (!extractedText.trim()) {
-      toast.error('No text to read');
+  const validateAndParseText = async (text: string) => {
+    if (!text.trim()) {
+      toast.error('Please enter some text');
       return;
     }
     
-    const wordCount = extractedText.trim().split(/\s+/).length;
+    const wordCount = text.trim().split(/\s+/).length;
     if (wordCount < MIN_WORD_COUNT) {
       toast.error(`Please enter at least ${MIN_WORD_COUNT} words`);
       return;
     }
     
+    await parseAndStartReading(text);
+  };
+  
+  const parseAndStartReading = async (text: string) => {
+    const wordCount = text.trim().split(/\s+/).length;
+    
+    // Warn for large text
+    if (wordCount > LARGE_TEXT_THRESHOLD) {
+      toast.warning(`Processing ${wordCount.toLocaleString()} words. This may take a moment...`);
+    }
+    
     setIsParsing(true);
     try {
-      const parsed = await parseTextIntoChunks(extractedText);
+      const parsed = await parseTextIntoChunks(text);
       setChunks(parsed);
       setCurrentIndex(0);
       setShowInput(false);
-      setInputText(extractedText);
+      setInputText(text);
       
+      // Calculate estimated reading time
       const estimatedMinutes = Math.ceil(wordCount / wpm);
       toast.success(`Text loaded successfully! Estimated reading time: ${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''} at ${wpm} WPM`);
     } catch (err) {
@@ -234,6 +215,10 @@ const App: React.FC = () => {
     } finally {
       setIsParsing(false);
     }
+  };
+  
+  const handleStartReadingExtracted = async () => {
+    await validateAndParseText(extractedText);
   };
 
   return (
