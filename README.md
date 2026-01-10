@@ -1,75 +1,167 @@
 # LearningTheForce AI Reader
 
-An AI-powered speed reading application with OCR support, intelligent text chunking, and synchronized highlighting.
+A modern, AI-powered speed reading application with OCR support, intelligent text chunking, and a polished user interface built with React and shadcn/ui.
 
 ## Features
 
-- **Speed Reading**: Variable speed text display (200-1000 WPM)
-- **OCR Support**: Extract text from images using Tesseract.js
-- **Smart Chunking**: AI-powered text chunking for optimal reading flow
-- **Synchronized Highlighting**: Visual focus on current reading position
-- **Keyboard Controls**: Space (play/pause), Arrow keys (skip), R (restart)
+### Core Reading Features
+- **Variable Speed Reading**: Adjustable reading speed from 200 to 1000 words per minute
+- **Smart Text Chunking**: AI-powered text chunking for optimal reading flow and comprehension
+- **Focus Word Highlighting**: Visual emphasis on the focus word in each phrase with smooth animations
+- **Real-time Progress Tracking**: Visual progress bar showing reading completion and estimated time remaining
 
-## Quick Start
+### Text Input Options
+- **Manual Text Input**: Paste or type text directly into the application
+- **OCR Image Upload**: Extract text from images using Tesseract.js
+- **Sample Text**: Quick-start with pre-loaded sample text
+- **Text Editing**: Edit extracted OCR text before starting reading session
 
-The app should work out of the box in the Spark environment. If you encounter the error:
+### OCR Capabilities
+- **Confidence Tracking**: Display OCR confidence percentage with color-coded indicators
+- **Low Confidence Warnings**: Automatic alerts when OCR confidence is below 60%
+- **Progress Visualization**: Real-time OCR processing progress bar
+- **Multi-language Support**: Configurable language support for text extraction
 
+### User Experience
+- **Tabbed Interface**: Clean separation between text input and image upload
+- **Keyboard Shortcuts**: Full keyboard control for efficient navigation
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Touch-Friendly**: Minimum 44px touch targets for mobile accessibility
+- **Toast Notifications**: User-friendly feedback with success/error messages
+- **Smooth Animations**: Polished transitions and focus word animations
+
+## Installation
+
+### Prerequisites
+- Node.js 18+ and npm
+
+### Setup
+```bash
+# Clone the repository
+git clone https://github.com/Slidrive/astraread-ai.git
+cd astraread-ai
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
 ```
-ENOENT: no such file or directory, open '.../node_modules/@vitejs/plugin-react-swc/refresh-runtime.js'
-```
 
-**This is a Vite cache issue.** The fix is to clear Vite's dependency cache:
+## Technology Stack
 
-### Fix for SWC/React Plugin Error
+### Frontend Framework
+- **React 18** with TypeScript
+- **Vite** for fast development and optimized builds
 
-1. Stop the dev server if running
-2. Delete the Vite cache directory:
-   ```bash
-   rm -rf node_modules/.vite
-   ```
-3. Restart the dev server
+### UI Components
+- **shadcn/ui**: Modern component library built on Radix UI
+- **Tailwind CSS**: Utility-first styling
+- **Framer Motion**: Smooth animations and transitions
+- **Sonner**: Beautiful toast notifications
 
-The error occurs when Vite's pre-bundling cache has a stale reference to the SWC variant of the React plugin. This project uses `@vitejs/plugin-react` (not the SWC version), and clearing the cache forces Vite to rebuild with the correct dependencies.
+### Core Libraries
+- **Tesseract.js**: Browser-based OCR engine
+- **Lucide React**: Icon library
+- **Radix UI**: Accessible component primitives
 
-## Architecture
+## Usage
 
-- **React + TypeScript**: UI built with shadcn components
-- **Tesseract.js**: Browser-based OCR
-- **OpenAI API**: Smart text chunking for optimal reading
-- **Tailwind CSS**: Styling with custom theme
+### Starting a Reading Session
 
-## Project Structure
+1. **Text Input Method**:
+   - Click "Text Input" tab
+   - Paste your text or click "Load Sample Text"
+   - View word count
+   - Click "Start Reading"
 
+2. **Image Upload Method**:
+   - Click "Image Upload" tab
+   - Upload an image containing text
+   - Wait for OCR processing
+   - Review extracted text and OCR confidence
+   - Edit text if needed
+   - Click "Start Reading"
+
+### Reading Controls
+
+- **Play/Pause**: Click the play button or press `Space`
+- **Skip Forward**: Click skip button or press `→` (skips 10 chunks)
+- **Skip Backward**: Click skip button or press `←` (skips 10 chunks)
+- **Restart**: Click restart button or press `R`
+- **Adjust Speed**: Use the slider or click preset WPM buttons (300, 500, 700)
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play/Pause reading |
+| `←` | Skip backward 10 chunks |
+| `→` | Skip forward 10 chunks |
+| `R` | Restart from beginning |
+
+## Development
+
+### Project Structure
 ```
 src/
 ├── App.tsx              # Main application component
-├── components/          # React components
+├── components/          
 │   └── ui/             # shadcn UI components
+│       ├── button.tsx
+│       ├── dialog.tsx
+│       ├── slider.tsx
+│       ├── progress.tsx
+│       ├── tabs.tsx
+│       └── ...
 ├── lib/
-│   ├── ocr-service.ts  # OCR functionality
+│   ├── ocr-service.ts  # OCR functionality with Tesseract.js
 │   ├── text-parser.ts  # Text chunking logic
 │   └── utils.ts        # Utility functions
-└── styles/             # CSS and theming
+├── main.css            # Global styles and animations
+└── index.css           # Tailwind configuration
+```
+
+### Key Constants
+- `MIN_WORD_COUNT`: 10 words (minimum text length)
+- `LARGE_TEXT_THRESHOLD`: 100,000 characters
+- `OCR_CONFIDENCE_THRESHOLD`: 60% (minimum acceptable confidence)
+
+### Running Tests
+```bash
+npm test
+```
+
+### Building for Production
+```bash
+npm run build
+npm run preview
 ```
 
 ## Troubleshooting
 
 ### Vite Module Resolution Errors
-
-If you see errors about missing Vite modules or plugins:
-
+If you see errors about missing Vite modules:
 1. Clear the Vite cache: `rm -rf node_modules/.vite`
-2. Clear npm cache: `npm cache clean --force`  
-3. Reinstall dependencies: `rm -rf node_modules && npm install`
-4. Restart the dev server
+2. Restart the dev server
 
 ### OCR Not Working
+- Ensure you're uploading a clear image with readable text
+- Check the OCR confidence score in the notification
+- Try adjusting image quality or contrast
 
-Make sure you're uploading a clear image with readable text. The OCR confidence score will show in the toast notification after processing.
+### Build Errors
+If you encounter CSS or Tailwind errors:
+1. Clear the build cache: `rm -rf dist`
+2. Reinstall dependencies: `rm -rf node_modules && npm install`
+3. Rebuild: `npm run build`
 
-### TypeScript Errors in UI Components
+## Contributing
 
-The shadcn UI components may show TypeScript warnings about lucide-react imports or recharts types. These are non-critical type warnings and don't affect runtime functionality.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
