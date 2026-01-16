@@ -1,7 +1,7 @@
 import { Flashcard, Quiz, QuizQuestion } from './types';
 
 export async function generateSummary(text: string): Promise<string> {
-  const prompt = spark.llmPrompt`You are a helpful reading assistant.
+  const prompt = window.spark.llmPrompt`You are a helpful reading assistant.
 The user is studying the following text:
 
 ${text}
@@ -13,12 +13,12 @@ Task:
 
 Return ONLY the bullet points, one per line, starting with a dash (-).`;
 
-  const result = await spark.llm(prompt, "gpt-4o-mini", false);
+  const result = await window.spark.llm(prompt, "gpt-4o-mini", false);
   return result.trim();
 }
 
 export async function explainSimpler(text: string): Promise<string> {
-  const prompt = spark.llmPrompt`You are an assistant helping someone understand a difficult passage.
+  const prompt = window.spark.llmPrompt`You are an assistant helping someone understand a difficult passage.
 
 Text:
 ${text}
@@ -31,7 +31,7 @@ Task:
 
 Return your explanation as plain text.`;
 
-  const result = await spark.llm(prompt, "gpt-4o-mini", false);
+  const result = await window.spark.llm(prompt, "gpt-4o-mini", false);
   return result.trim();
 }
 
@@ -39,7 +39,7 @@ export async function generateFlashcards(
   text: string,
   documentId: string
 ): Promise<Flashcard[]> {
-  const prompt = spark.llmPrompt`You are creating study flashcards from the following text:
+  const prompt = window.spark.llmPrompt`You are creating study flashcards from the following text:
 
 ${text}
 
@@ -59,7 +59,7 @@ Format:
 }`;
 
   try {
-    const result = await spark.llm(prompt, "gpt-4o-mini", true);
+    const result = await window.spark.llm(prompt, "gpt-4o-mini", true);
     const parsed = JSON.parse(result);
 
     if (!parsed.flashcards || !Array.isArray(parsed.flashcards)) {
@@ -68,10 +68,8 @@ Format:
 
     return parsed.flashcards.map((fc: any, idx: number) => ({
       id: `fc-${Date.now()}-${idx}`,
-      documentId,
       question: fc.question || '',
       answer: fc.answer || '',
-      createdAt: Date.now(),
     }));
   } catch (error) {
     console.error('Failed to generate flashcards:', error);
@@ -84,7 +82,7 @@ export async function generateQuiz(
   documentId: string,
   title: string = 'Reading Comprehension Quiz'
 ): Promise<Quiz | null> {
-  const prompt = spark.llmPrompt`You are creating a short quiz from the following text:
+  const prompt = window.spark.llmPrompt`You are creating a short quiz from the following text:
 
 ${text}
 
@@ -109,7 +107,7 @@ Format:
 }`;
 
   try {
-    const result = await spark.llm(prompt, "gpt-4o-mini", true);
+    const result = await window.spark.llm(prompt, "gpt-4o-mini", true);
     const parsed = JSON.parse(result);
 
     if (!parsed.questions || !Array.isArray(parsed.questions)) {
@@ -124,7 +122,6 @@ Format:
 
     return {
       id: `quiz-${Date.now()}`,
-      documentId,
       title,
       questions,
       createdAt: Date.now(),
@@ -139,7 +136,7 @@ export async function answerQuestion(
   question: string,
   contextText: string
 ): Promise<string> {
-  const prompt = spark.llmPrompt`You are a helpful reading tutor. Answer the user's question based on the following text.
+  const prompt = window.spark.llmPrompt`You are a helpful reading tutor. Answer the user's question based on the following text.
 
 Text:
 ${contextText}
@@ -149,6 +146,6 @@ ${question}
 
 Provide a clear, concise answer based on the text. If the answer isn't in the text, say so politely.`;
 
-  const result = await spark.llm(prompt, "gpt-4o-mini", false);
+  const result = await window.spark.llm(prompt, "gpt-4o-mini", false);
   return result.trim();
 }
