@@ -1,41 +1,44 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import "tw-animate-css";
 
 @layer base {
+  * {
+    @apply border-border
+  }
+  
   body {
     font-family: 'Inter', sans-serif;
   }
 }
 
 :root {
-  --background: oklch(0.96 0.01 85);
-  --foreground: oklch(0.25 0.01 270);
+  --background: oklch(0.11 0.02 250);
+  --foreground: oklch(0.90 0.01 250);
   
-  --card: oklch(0.99 0 0);
-  --card-foreground: oklch(0.35 0.15 270);
+  --card: oklch(0.15 0.02 250);
+  --card-foreground: oklch(0.90 0.01 250);
   
-  --popover: oklch(0.99 0 0);
-  --popover-foreground: oklch(0.25 0.01 270);
+  --popover: oklch(0.15 0.02 250);
+  --popover-foreground: oklch(0.90 0.01 250);
   
-  --primary: oklch(0.35 0.15 270);
+  --primary: oklch(0.60 0.20 240);
   --primary-foreground: oklch(0.99 0 0);
   
-  --secondary: oklch(0.65 0.02 250);
-  --secondary-foreground: oklch(0.25 0.01 270);
+  --secondary: oklch(0.25 0.02 250);
+  --secondary-foreground: oklch(0.90 0.01 250);
   
-  --muted: oklch(0.92 0.005 250);
-  --muted-foreground: oklch(0.50 0.02 250);
+  --muted: oklch(0.20 0.02 250);
+  --muted-foreground: oklch(0.55 0.02 250);
   
-  --accent: oklch(0.70 0.19 25);
-  --accent-foreground: oklch(0.25 0.01 270);
+  --accent: oklch(0.60 0.20 240);
+  --accent-foreground: oklch(0.99 0 0);
   
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.99 0 0);
   
-  --border: oklch(0.88 0.01 250);
-  --input: oklch(0.88 0.01 250);
-  --ring: oklch(0.35 0.15 270);
+  --border: oklch(0.25 0.02 250);
+  --input: oklch(0.25 0.02 250);
+  --ring: oklch(0.60 0.20 240);
   
   --radius: 0.5rem;
 }
@@ -67,4 +70,36 @@
   --radius-xl: calc(var(--radius) * 2);
   --radius-2xl: calc(var(--radius) * 3);
   --radius-full: 9999px;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(96, 165, 250, 0.8);
+  }
+}
+
+.reading-focus {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.word-transition {
+  transition: color 0.3s ease, text-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.word-transition:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input[type="range"] {
+    min-height: 44px;
+  }
 }
