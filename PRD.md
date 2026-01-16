@@ -19,6 +19,13 @@ A sophisticated speed reading application that uses intelligent text chunking an
 - **Progression**: Empty state → Click/paste/upload → Text appears in input area or image is processed via OCR → Parse button becomes active → Click parse → Reading view loads
 - **Success criteria**: App handles plain text up to 50,000 words, preserves paragraph breaks, handles various text encodings, successfully extracts text from images with confidence reporting
 
+### AI-Powered Study Tools ✨ NEW
+- **Functionality**: Generate summaries, explanations, flashcards, and quizzes from reading content using AI
+- **Purpose**: Transform passive reading into active learning with AI-generated study materials
+- **Trigger**: User clicks "Show AI Tools" button after loading text
+- **Progression**: Click Show Tools → AI panel appears → Select tool (Summarize/Explain/Flashcards/Quiz) → AI processes text → Results displayed → User can review/study generated content
+- **Success criteria**: AI successfully generates relevant summaries, clear explanations, useful flashcards with Q&A pairs, and comprehensive quizzes with multiple choice questions
+
 ### Intelligent Word Chunking
 - **Functionality**: Group words into semantic chunks (1-3 words) based on natural language patterns
 - **Purpose**: Improve comprehension by presenting phrases rather than individual words

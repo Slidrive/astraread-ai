@@ -10,6 +10,10 @@ import { Card, CardContent } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { Alert, AlertDescription } from './components/ui/alert';
+import { AiStudyTools } from './components/AiStudyTools';
+import { FlashcardViewer } from './components/FlashcardViewer';
+import { QuizViewer } from './components/QuizViewer';
+import { Flashcard, Quiz } from './lib/types';
 
 const MIN_WORD_COUNT = 10;
 const OCR_CONFIDENCE_THRESHOLD = 60;
@@ -39,6 +43,10 @@ const App: React.FC = () => {
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>(TAB_TEXT_INPUT);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [showStudyTools, setShowStudyTools] = useState(false);
 
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
@@ -324,6 +332,40 @@ const App: React.FC = () => {
               Keyboard: Space = Play/Pause • ← / → = Skip • R = Restart • {wordsRead}/{totalWords}{' '}
               words read
             </p>
+          </div>
+        )}
+
+        {/* AI Study Tools Section */}
+        {safeChunks.length > 0 && inputText && (
+          <div className="space-y-6 mt-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-slate-200">Study Tools</h2>
+              <Button
+                onClick={() => setShowStudyTools(!showStudyTools)}
+                variant="outline"
+                size="sm"
+              >
+                {showStudyTools ? 'Hide Tools' : 'Show AI Tools'}
+              </Button>
+            </div>
+
+            {showStudyTools && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <AiStudyTools
+                    fullText={inputText}
+                    documentTitle="Current Reading"
+                    onFlashcardsGenerated={(cards) => setFlashcards(cards)}
+                    onQuizGenerated={(q) => setQuiz(q)}
+                  />
+                </div>
+
+                <div className="space-y-6">
+                  {flashcards.length > 0 && <FlashcardViewer flashcards={flashcards} />}
+                  {quiz && <QuizViewer quiz={quiz} onComplete={(score) => toast.success(`Score: ${score}%`)} />}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
