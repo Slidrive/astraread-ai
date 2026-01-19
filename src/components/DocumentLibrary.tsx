@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { useKV } from '@github/spark/hooks';
+import { Input } from './ui/input';
+import { ScrollArea } from './ui/scroll-area';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -29,8 +30,8 @@ export function DocumentLibrary({
 
   const handleLoad = (doc: SavedDocument) => {
     onLoadDocument(doc);
-    toast.success(`Loaded "${doc.title}"`);
-    onClose();
+  const handleDelete = (docId: string, e: R
+    onDeleteDo
   };
 
   const handleDelete = (docId: string, e: React.MouseEvent) => {
@@ -95,36 +96,36 @@ export function DocumentLibrary({
             {filteredDocs.map((doc) => (
               <Card
                 key={doc.id}
-                className="hover:border-primary transition-colors cursor-pointer"
-                onClick={() => handleLoad(doc)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-3 mt-1 flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <BookOpen size={14} />
-                          {getWordCount(doc.text)} words
-                        </span>
+                      <CardTitle className="text-lg truncate">{doc.title}</CardTi
+                        <span className="flex i
+               
                         {doc.wpm && (
-                          <Badge variant="secondary" className="text-xs">
                             {doc.wpm} WPM
-                          </Badge>
                         )}
-                        <span className="flex items-center gap-1 text-xs">
                           <Clock size={12} />
-                          {formatDate(doc.lastReadAt)}
                         </span>
-                      </CardDescription>
                     </div>
-                    <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDelete(doc.id, e)}
-                      className="flex-shrink-0"
+                      onClick={(e) => handleDelete(doc.i
                     >
-                      <Trash size={16} />
+                    </Button>
+                </CardHeader>
+            ))}
+        </ScrollArea>
+    </div>
+}
+
+
+
+
+
+
+
+
+
+
+
+
                     </Button>
                   </div>
                 </CardHeader>
