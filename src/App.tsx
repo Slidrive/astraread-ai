@@ -20,8 +20,11 @@ import { DocumentChat } from './components/DocumentChat';
 import { BookmarksManager } from './components/BookmarksManager';
 import { ReadingGoals } from './components/ReadingGoals';
 import { TextToSpeech } from './components/TextToSpeech';
-import { Flashcard, Quiz, SavedDocument, Bookmark, ReadingGoal } from './lib/types';
-import { FolderOpen, ChartBar, Chat, BookmarkSimple, Target, SpeakerHigh } from '@phosphor-icons/react';
+import { VocabularyHighlighter } from './components/VocabularyHighlighter';
+import { ReadingHistoryCalendar } from './components/ReadingHistoryCalendar';
+import { FocusMode } from './components/FocusMode';
+import { Flashcard, Quiz, SavedDocument, Bookmark, ReadingGoal, ReadingSession } from './lib/types';
+import { FolderOpen, ChartBar, Chat, BookmarkSimple, Target, SpeakerHigh, BookOpen, CalendarBlank, ArrowsOut } from '@phosphor-icons/react';
 
 const MIN_WORD_COUNT = 10;
 const OCR_CONFIDENCE_THRESHOLD = 60;
@@ -78,6 +81,12 @@ const App: React.FC = () => {
   
   const [showTTS, setShowTTS] = useState(false);
 
+  const [showVocabulary, setShowVocabulary] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showFocusMode, setShowFocusMode] = useState(false);
+
+  const [readingHistory, setReadingHistory] = useKV<ReadingSession[]>('reading-history', []);
+
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
   const currentChunk = safeChunks[currentIndex] || null;
@@ -97,6 +106,30 @@ const App: React.FC = () => {
       } else {
         setIsPlaying(false);
         toast.success('Reading complete!');
+        
+        const today = new Date().toDateString();
+        setReadingHistory((currentHistory) => {
+          const existingSession = currentHistory.find(s => s.date === today);
+          if (existingSession) {
+            return currentHistory.map(s =>
+              s.date === today
+                ? {
+                    ...s,
+                    wordsRead: s.wordsRead + totalWords,
+                    documentsRead: s.documentsRead + 1,
+                    avgWpm: Math.round((s.avgWpm * s.documentsRead + safeWpm) / (s.documentsRead + 1))
+                  }
+                : s
+            );
+          } else {
+            return [...currentHistory, {
+              date: today,
+              wordsRead: totalWords,
+              documentsRead: 1,
+              avgWpm: safeWpm
+            }];
+          }
+        });
       }
     }, msPerChunk);
 
@@ -352,6 +385,22 @@ const App: React.FC = () => {
             {safeChunks.length > 0 && (
               <>
                 <Button
+                  onClick={() => setShowVocabulary(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <BookOpen size={16} className="mr-2" />
+                  Vocab
+                </Button>
+                <Button
+                  onClick={() => setShowFocusMode(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ArrowsOut size={16} className="mr-2" />
+                  Focus
+                </Button>
+                <Button
                   onClick={() => setShowBookmarks(true)}
                   variant="outline"
                   size="sm"
@@ -385,6 +434,14 @@ const App: React.FC = () => {
                 </Button>
               </>
             )}
+            <Button
+              onClick={() => setShowHistory(true)}
+              variant="outline"
+              size="sm"
+            >
+              <CalendarBlank size={16} className="mr-2" />
+              History
+            </Button>
             {safeChunks.length > 0 && (
               <Button
                 onClick={handleNewText}
@@ -745,6 +802,40 @@ const App: React.FC = () => {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Vocabulary Highlighter Dialog */}
+        <Dialog open={showVocabulary} onOpenChange={setShowVocabulary}>
+          <DialogContent className="max-w-3xl bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Vocabulary Analysis</DialogTitle>
+            </DialogHeader>
+            <VocabularyHighlighter
+              text={inputText}
+              onClose={() => setShowVocabulary(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Reading History Calendar Dialog */}
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Reading History</DialogTitle>
+            </DialogHeader>
+            <ReadingHistoryCalendar sessions={readingHistory} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Focus Mode */}
+        {showFocusMode && safeChunks.length > 0 && (
+          <FocusMode
+            chunks={safeChunks}
+            initialIndex={currentIndex}
+            wpm={wpm}
+            onClose={() => setShowFocusMode(false)}
+            onIndexChange={setCurrentIndex}
+          />
+        )}
       </main>
     </div>
   );

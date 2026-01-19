@@ -47,6 +47,27 @@ A sophisticated speed reading application that uses intelligent text chunking an
 - **Progression**: Enable TTS → Select voice → Adjust rate/pitch/volume → Play/Pause → Auto-advance through text
 - **Success criteria**: Text speaks clearly, follows reading progress, voice settings persist, works across all browsers
 
+### Vocabulary Analysis ✨ NEW
+- **Functionality**: AI-powered analysis of reading material to identify and define difficult or interesting words
+- **Purpose**: Enhance vocabulary learning and comprehension by highlighting advanced terms with definitions and examples
+- **Trigger**: User clicks "Vocab" button after loading text
+- **Progression**: Click Vocab → AI analyzes text → List of 8-12 words displayed with definitions → Click word to see example sentences → Review and learn new vocabulary
+- **Success criteria**: AI identifies relevant vocabulary words, provides accurate definitions, includes contextual examples, words are categorized by difficulty level
+
+### Reading History Calendar ✨ NEW
+- **Functionality**: Visual calendar showing reading activity over the past 6 weeks with statistics
+- **Purpose**: Track reading progress and maintain motivation through visual feedback
+- **Trigger**: User clicks "History" button
+- **Progression**: Click History → Calendar displays with color-coded intensity → Hover for daily details → View total words, documents read, and average WPM → Review recent sessions list
+- **Success criteria**: Calendar accurately tracks daily reading sessions, displays intensity based on word count, persists data between sessions, shows meaningful statistics
+
+### Focus Mode ✨ NEW
+- **Functionality**: Fullscreen distraction-free reading interface with minimal controls
+- **Purpose**: Maximize concentration and eliminate distractions during reading sessions
+- **Trigger**: User clicks "Focus" button while reading
+- **Progression**: Click Focus → Enters fullscreen → Large text display with minimal UI → Control bar at bottom → Keyboard shortcuts active → Press Esc or click X to exit
+- **Success criteria**: Smooth transition to fullscreen, maintains reading position, keyboard shortcuts work reliably, easy to exit, syncs progress with main view
+
 ### Intelligent Word Chunking
 - **Functionality**: Group words into semantic chunks (1-3 words) based on natural language patterns
 - **Purpose**: Improve comprehension by presenting phrases rather than individual words
