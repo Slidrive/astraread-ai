@@ -1,63 +1,65 @@
 import { useState } from 'react';
+import { Card, CardContent, CardDescription,
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
-import { ScrollArea } from './ui/scroll-area';
-import { BookOpen, Trash, Clock, Lightning } from '@phosphor-icons/react';
+interface DocumentLibraryProps {
+import { Badge } from './ui/badge';
+  onDeleteDocument: (docId: string) => void;
 import { toast } from 'sonner';
 import { SavedDocument } from '@/lib/types';
 
-interface DocumentLibraryProps {
-  documents: SavedDocument[];
+
   onLoadDocument: (doc: SavedDocument) => void;
-  onDeleteDocument: (docId: string) => void;
-  onClose: () => void;
+  );
 }
 
-export function DocumentLibrary({ documents, onLoadDocument, onDeleteDocument, onClose }: DocumentLibraryProps) {
+export function DocumentLibrary({ onLoadDocument, onClose }: DocumentLibraryProps) {
+  const [documents, setDocuments] = useKV<SavedDocument[]>('saved-documents', []);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredDocs = documents.filter((doc: SavedDocument) =>
+  const filteredDocs = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleDelete = (docId: string) => {
-    onDeleteDocument(docId);
+    setDocuments(currentDocs => currentDocs.filter(doc => doc.id !== docId));
     toast.success('Document deleted');
-  };
+    
 
-  const handleLoad = (doc: SavedDocument) => {
-    onLoadDocument(doc);
-    onClose();
-    toast.success(`Loaded: ${doc.title}`);
-  };
+          onChange={(e) => setSearchQuery(e.ta
+        />
+          Clos
+      </div>
+    
 
-  const formatDate = (timestamp?: number) => {
-    if (!timestamp) return 'Never';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+            <p className="text-muted-foregroun
+            </p>
+              Documents are automatic
+          </CardContent>
+      ) : (
+          <div className="space-y-3">
+              <Card
+                className="hover:border-primary tra
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
+                  <div className="flex i
+                      <CardTitle className="text-
+                        <span className="flex items
+                          {getWordCount(doc.text
+                        {doc.wpm && (
+    
 
-  const getWordCount = (text: string) => {
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  };
+                        <span className="f
+                          {formatDate(doc.lastReadAt)}
+    
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search documents..."
-          value={searchQuery}
+          
+                        e.stopP
+                      }}
+              
+                    </Button>
+                </CardHeader>
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1"
         />
@@ -98,7 +100,7 @@ export function DocumentLibrary({ documents, onLoadDocument, onDeleteDocument, o
                         </span>
                         {doc.wpm && (
                           <span className="flex items-center gap-1">
-                            <Lightning size={14} />
+                            <Zap size={14} />
                             {doc.wpm} WPM
                           </span>
                         )}
@@ -117,20 +119,20 @@ export function DocumentLibrary({ documents, onLoadDocument, onDeleteDocument, o
                       }}
                       className="hover:bg-destructive hover:text-destructive-foreground"
                     >
-                      <Trash size={18} />
+                      <Trash2 size={18} />
                     </Button>
                   </div>
-                </CardHeader>
+
                 <CardContent className="pt-0">
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {doc.text.substring(0, 150)}...
                   </p>
                 </CardContent>
-              </Card>
+
             ))}
           </div>
         </ScrollArea>
-      )}
+
     </div>
-  );
+
 }
