@@ -13,7 +13,8 @@ export default defineConfig({
     include: ['tesseract.js'],
     esbuildOptions: {
       mainFields: ['module', 'main']
-    }
+    },
+    force: true
   },
   build: {
     commonjsOptions: {
@@ -26,5 +27,6 @@ export default defineConfig({
       strict: false
     }
   },
-  clearScreen: false
+  clearScreen: false,
+  cacheDir: 'node_modules/.vite'
 })
