@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useKV } from '@github/spark/hooks';
 import { Input } from './ui/input';
-import { ScrollArea } from './ui/scroll-area';
-import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { toast } from 'sonner';
@@ -30,8 +29,6 @@ export function DocumentLibrary({
 
   const handleLoad = (doc: SavedDocument) => {
     onLoadDocument(doc);
-  const handleDelete = (docId: string, e: R
-    onDeleteDo
   };
 
   const handleDelete = (docId: string, e: React.MouseEvent) => {
@@ -96,36 +93,36 @@ export function DocumentLibrary({
             {filteredDocs.map((doc) => (
               <Card
                 key={doc.id}
-                      <CardTitle className="text-lg truncate">{doc.title}</CardTi
-                        <span className="flex i
-               
-                        {doc.wpm && (
-                            {doc.wpm} WPM
-                        )}
-                          <Clock size={12} />
+                className="cursor-pointer hover:bg-accent/10 transition-colors"
+                onClick={() => handleLoad(doc)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <BookOpen size={12} />
+                          {getWordCount(doc.text)} words
                         </span>
+                        {doc.wpm && (
+                          <Badge variant="outline" className="text-xs">
+                            {doc.wpm} WPM
+                          </Badge>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          {formatDate(doc.lastReadAt)}
+                        </span>
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
                       variant="ghost"
-                      onClick={(e) => handleDelete(doc.i
+                      onClick={(e) => handleDelete(doc.id, e)}
+                      className="text-destructive hover:text-destructive"
                     >
-                    </Button>
-                </CardHeader>
-            ))}
-        </ScrollArea>
-    </div>
-}
-
-
-
-
-
-
-
-
-
-
-
-
+                      <Trash size={16} />
                     </Button>
                   </div>
                 </CardHeader>

@@ -17,8 +17,11 @@ import { QuizViewer } from './components/QuizViewer';
 import { DocumentLibrary } from './components/DocumentLibrary';
 import { ReadingStats } from './components/ReadingStats';
 import { DocumentChat } from './components/DocumentChat';
-import { Flashcard, Quiz, SavedDocument } from './lib/types';
-import { FolderOpen, ChartBar, Chat } from '@phosphor-icons/react';
+import { BookmarksManager } from './components/BookmarksManager';
+import { ReadingGoals } from './components/ReadingGoals';
+import { TextToSpeech } from './components/TextToSpeech';
+import { Flashcard, Quiz, SavedDocument, Bookmark, ReadingGoal } from './lib/types';
+import { FolderOpen, ChartBar, Chat, BookmarkSimple, Target, SpeakerHigh } from '@phosphor-icons/react';
 
 const MIN_WORD_COUNT = 10;
 const OCR_CONFIDENCE_THRESHOLD = 60;
@@ -59,6 +62,21 @@ const App: React.FC = () => {
   const [showStats, setShowStats] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+
+  const [bookmarks, setBookmarks] = useKV<Bookmark[]>('bookmarks', []);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  
+  const [readingGoal, setReadingGoal] = useKV<ReadingGoal>('reading-goal', {
+    dailyWordTarget: 2000,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastReadDate: new Date().toDateString(),
+    wordsReadToday: 0,
+    totalWordsRead: 0,
+  });
+  const [showGoals, setShowGoals] = useState(false);
+  
+  const [showTTS, setShowTTS] = useState(false);
 
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
@@ -234,6 +252,77 @@ const App: React.FC = () => {
     setOcrConfidence(null);
   };
 
+  const handleAddBookmark = (chunkIndex: number, note?: string) => {
+    const newBookmark: Bookmark = {
+      id: `bookmark-${Date.now()}`,
+      chunkIndex,
+      note,
+      createdAt: Date.now(),
+    };
+    setBookmarks((currentBookmarks) => [...currentBookmarks, newBookmark]);
+  };
+
+  const handleDeleteBookmark = (bookmarkId: string) => {
+    setBookmarks((currentBookmarks) => currentBookmarks.filter((b) => b.id !== bookmarkId));
+  };
+
+  const handleJumpToBookmark = (chunkIndex: number) => {
+    setCurrentIndex(chunkIndex);
+    setIsPlaying(false);
+    toast.success(`Jumped to bookmark`);
+  };
+
+  const handleUpdateGoal = (newTarget: number) => {
+    setReadingGoal((currentGoal) => ({
+      ...currentGoal,
+      dailyWordTarget: newTarget,
+    }));
+  };
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (readingGoal.lastReadDate !== today) {
+      const wasYesterday = new Date(readingGoal.lastReadDate);
+      wasYesterday.setDate(wasYesterday.getDate() + 1);
+      const isConsecutive = wasYesterday.toDateString() === today;
+
+      setReadingGoal((currentGoal) => ({
+        ...currentGoal,
+        lastReadDate: today,
+        wordsReadToday: 0,
+        currentStreak: isConsecutive ? currentGoal.currentStreak : 0,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying && wordsRead > 0) {
+      const newWordsRead = wordsRead;
+      setReadingGoal((currentGoal) => {
+        const newWordsToday = currentGoal.wordsReadToday + 1;
+        const newTotalWords = currentGoal.totalWordsRead + 1;
+        
+        const today = new Date().toDateString();
+        let newStreak = currentGoal.currentStreak;
+        let newLongestStreak = currentGoal.longestStreak;
+
+        if (newWordsToday >= currentGoal.dailyWordTarget && currentGoal.wordsReadToday < currentGoal.dailyWordTarget) {
+          newStreak = currentGoal.currentStreak + 1;
+          newLongestStreak = Math.max(newStreak, currentGoal.longestStreak);
+        }
+
+        return {
+          ...currentGoal,
+          wordsReadToday: newWordsToday,
+          totalWordsRead: newTotalWords,
+          currentStreak: newStreak,
+          longestStreak: newLongestStreak,
+          lastReadDate: today,
+        };
+      });
+    }
+  }, [wordsRead, isPlaying]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50 flex flex-col">
       <Toaster position="top-center" richColors />
@@ -245,6 +334,14 @@ const App: React.FC = () => {
           </h1>
           <div className="flex items-center gap-2">
             <Button
+              onClick={() => setShowGoals(true)}
+              variant="outline"
+              size="sm"
+            >
+              <Target size={16} className="mr-2" />
+              Goals
+            </Button>
+            <Button
               onClick={() => setShowLibrary(true)}
               variant="outline"
               size="sm"
@@ -254,6 +351,22 @@ const App: React.FC = () => {
             </Button>
             {safeChunks.length > 0 && (
               <>
+                <Button
+                  onClick={() => setShowBookmarks(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <BookmarkSimple size={16} className="mr-2" />
+                  Bookmarks
+                </Button>
+                <Button
+                  onClick={() => setShowTTS(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <SpeakerHigh size={16} className="mr-2" />
+                  TTS
+                </Button>
                 <Button
                   onClick={() => setShowStats(true)}
                   variant="outline"
@@ -584,6 +697,51 @@ const App: React.FC = () => {
             <DocumentChat
               documentText={inputText}
               documentTitle={currentDocumentId ? savedDocuments.find((d: SavedDocument) => d.id === currentDocumentId)?.title || 'Current Document' : 'Current Document'}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Bookmarks Dialog */}
+        <Dialog open={showBookmarks} onOpenChange={setShowBookmarks}>
+          <DialogContent className="max-w-2xl bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Bookmarks</DialogTitle>
+            </DialogHeader>
+            <BookmarksManager
+              bookmarks={bookmarks}
+              onAddBookmark={handleAddBookmark}
+              onDeleteBookmark={handleDeleteBookmark}
+              onJumpToBookmark={handleJumpToBookmark}
+              currentChunkIndex={currentIndex}
+              totalChunks={safeChunks.length}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Reading Goals Dialog */}
+        <Dialog open={showGoals} onOpenChange={setShowGoals}>
+          <DialogContent className="max-w-lg bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Reading Goals & Streaks</DialogTitle>
+            </DialogHeader>
+            <ReadingGoals
+              goal={readingGoal}
+              onUpdateGoal={handleUpdateGoal}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Text-to-Speech Dialog */}
+        <Dialog open={showTTS} onOpenChange={setShowTTS}>
+          <DialogContent className="max-w-lg bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Text-to-Speech</DialogTitle>
+            </DialogHeader>
+            <TextToSpeech
+              text={inputText}
+              currentChunkIndex={currentIndex}
+              onChunkChange={setCurrentIndex}
+              totalChunks={safeChunks.length}
             />
           </DialogContent>
         </Dialog>

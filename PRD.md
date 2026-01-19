@@ -26,6 +26,27 @@ A sophisticated speed reading application that uses intelligent text chunking an
 - **Progression**: Click Show Tools → AI panel appears → Select tool (Summarize/Explain/Flashcards/Quiz) → AI processes text → Results displayed → User can review/study generated content
 - **Success criteria**: AI successfully generates relevant summaries, clear explanations, useful flashcards with Q&A pairs, and comprehensive quizzes with multiple choice questions
 
+### Bookmark & Annotation System ✨ NEW
+- **Functionality**: Save specific locations in the reading material with optional notes
+- **Purpose**: Mark important sections for later review and add personal annotations
+- **Trigger**: User clicks "Bookmarks" button, then "Add Bookmark" while reading
+- **Progression**: Click Bookmarks → View saved bookmarks → Add Bookmark → Optional note → Save → Jump to bookmark from list
+- **Success criteria**: Bookmarks persist between sessions, notes are saved correctly, clicking bookmark jumps to exact position
+
+### Reading Goals & Streak Tracking ✨ NEW
+- **Functionality**: Set daily word count targets and track reading streaks
+- **Purpose**: Gamify reading habits and motivate consistent daily practice
+- **Trigger**: User clicks "Goals" button
+- **Progression**: View current goal → See streak counter → Check progress → Edit daily target → Track total words read
+- **Success criteria**: Daily streak increments when goal met, resets if day missed, shows longest streak and total words
+
+### Text-to-Speech Integration ✨ NEW
+- **Functionality**: Convert reading text to audio with voice customization options
+- **Purpose**: Enable multitasking and provide alternative content consumption method
+- **Trigger**: User clicks "TTS" button
+- **Progression**: Enable TTS → Select voice → Adjust rate/pitch/volume → Play/Pause → Auto-advance through text
+- **Success criteria**: Text speaks clearly, follows reading progress, voice settings persist, works across all browsers
+
 ### Intelligent Word Chunking
 - **Functionality**: Group words into semantic chunks (1-3 words) based on natural language patterns
 - **Purpose**: Improve comprehension by presenting phrases rather than individual words
@@ -71,6 +92,11 @@ A sophisticated speed reading application that uses intelligent text chunking an
 - **OCR failures**: Handle images with no detectable text gracefully with error messaging
 - **Low OCR confidence**: Display confidence percentage, allow user to review/edit extracted text
 - **Large images**: Process images efficiently without blocking UI, show progress indicator
+- **Bookmark at end**: Prevent bookmarking beyond last chunk
+- **Missed streak days**: Reset streak to 0 if a day is missed, preserve longest streak
+- **Goal updates mid-day**: Recalculate progress when daily target changes
+- **TTS browser support**: Gracefully handle browsers without Speech Synthesis API
+- **No voices available**: Show helpful error if no TTS voices found
 
 ## Design Direction
 The design should feel focused and meditative—like a precision instrument for the mind. It should embrace minimalism with purposeful moments of clarity, using generous negative space and deliberate typography to create a distraction-free reading sanctuary. The interface should be serious and elegant, fading into the background during reading while providing confident, immediate control when needed.
