@@ -13,7 +13,11 @@ import { Alert, AlertDescription } from './components/ui/alert';
 import { AiStudyTools } from './components/AiStudyTools';
 import { FlashcardViewer } from './components/FlashcardViewer';
 import { QuizViewer } from './components/QuizViewer';
-import { Flashcard, Quiz } from './lib/types';
+import { DocumentLibrary } from './components/DocumentLibrary';
+import { ReadingStats } from './components/ReadingStats';
+import { DocumentChat } from './components/DocumentChat';
+import { Flashcard, Quiz, SavedDocument } from './lib/types';
+import { FolderOpen, ChartBar, Chat } from '@phosphor-icons/react';
 
 const MIN_WORD_COUNT = 10;
 const OCR_CONFIDENCE_THRESHOLD = 60;
@@ -47,6 +51,13 @@ const App: React.FC = () => {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [showStudyTools, setShowStudyTools] = useState(false);
+  
+  const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
+  const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
   const safeChunks = chunks || [];
   const safeWpm = wpm || 500;
@@ -209,15 +220,45 @@ const App: React.FC = () => {
             <span className="text-blue-400">LearningTheForce</span>{' '}
             <span className="text-slate-200">AI Reader</span>
           </h1>
-          {safeChunks.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={handleNewText}
+              onClick={() => setShowLibrary(true)}
               variant="outline"
               size="sm"
             >
-              New Text
+              <FolderOpen size={16} className="mr-2" />
+              Library
             </Button>
-          )}
+            {safeChunks.length > 0 && (
+              <>
+                <Button
+                  onClick={() => setShowStats(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChartBar size={16} className="mr-2" />
+                  Stats
+                </Button>
+                <Button
+                  onClick={() => setShowChat(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Chat size={16} className="mr-2" />
+                  Q&A
+                </Button>
+              </>
+            )}
+            {safeChunks.length > 0 && (
+              <Button
+                onClick={handleNewText}
+                variant="outline"
+                size="sm"
+              >
+                New Text
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -465,6 +506,62 @@ const App: React.FC = () => {
                 )}
               </TabsContent>
             </Tabs>
+          </DialogContent>
+        </Dialog>
+
+        {/* Document Library Dialog */}
+        <Dialog open={showLibrary} onOpenChange={setShowLibrary}>
+          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Document Library</DialogTitle>
+            </DialogHeader>
+            <DocumentLibrary
+              documents={savedDocuments}
+              onLoadDocument={(doc) => {
+                setInputText(doc.text);
+                setWpm(doc.wpm || 500);
+                handleParse();
+                setShowLibrary(false);
+              }}
+              onDeleteDocument={(docId) => {
+                setSavedDocuments((docs) => docs.filter((d) => d.id !== docId));
+              }}
+              onClose={() => setShowLibrary(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Reading Stats Dialog */}
+        <Dialog open={showStats} onOpenChange={setShowStats}>
+          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700">
+            <DialogHeader>
+              <DialogTitle>Reading Statistics</DialogTitle>
+            </DialogHeader>
+            <ReadingStats
+              totalWordsRead={wordsRead}
+              currentWpm={wpm}
+              sessionsToday={savedDocuments.filter((d) => {
+                const today = new Date().toDateString();
+                return d.lastReadAt && new Date(d.lastReadAt).toDateString() === today;
+              }).length}
+              avgCompletionRate={progress}
+              recentSessions={savedDocuments.slice(-10).map((d) => ({
+                timestamp: d.lastReadAt || Date.now(),
+                wordsRead: getWordCount(d.text),
+                avgWpm: d.wpm || 500,
+                duration: Math.round((getWordCount(d.text) / (d.wpm || 500)) * 60),
+              }))}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Q&A Chat Dialog */}
+        <Dialog open={showChat} onOpenChange={setShowChat}>
+          <DialogContent className="max-w-3xl bg-slate-900 border-slate-700">
+            <DocumentChat
+              documentText={inputText}
+              documentTitle={currentDocumentId ? savedDocuments.find((d) => d.id === currentDocumentId)?.title || 'Current Document' : 'Current Document'}
+            />
           </DialogContent>
         </Dialog>
       </main>
