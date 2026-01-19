@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
+import { ScrollArea } from './ui/scroll-area';
 import { ChartBar, Lightning, Clock, BookOpen, Trophy } from '@phosphor-icons/react';
 
 interface ReadingSession {
@@ -37,6 +38,16 @@ export function ReadingStats({
   };
 
   const totalMinutesRead = recentSessions.reduce((sum, s) => sum + s.duration, 0) / 60;
+
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -99,7 +110,9 @@ export function ReadingStats({
         </CardHeader>
         <CardContent className="space-y-2">
           <Progress value={avgCompletionRate} className="h-3" />
-          <p className="text-sm text-muted-foreground">{Math.round(avgCompletionRate)}% average completion</p>
+          <div className="text-right text-sm text-muted-foreground">
+            {Math.round(avgCompletionRate)}%
+          </div>
         </CardContent>
       </Card>
 
@@ -107,25 +120,40 @@ export function ReadingStats({
         <Card>
           <CardHeader>
             <CardTitle>Recent Sessions</CardTitle>
-            <CardDescription>Your last {Math.min(5, recentSessions.length)} reading sessions</CardDescription>
+            <CardDescription>Your latest reading activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentSessions.slice(0, 5).map((session, idx) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{formatNumber(session.wordsRead)} words</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(session.timestamp).toLocaleDateString()}
-                    </p>
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-3">
+                {recentSessions.map((session, index) => (
+                  <div
+                    key={`${session.timestamp}-${index}`}
+                    className="flex items-center justify-between p-3 border border-border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {formatNumber(session.wordsRead)} words
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimestamp(session.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Lightning size={14} className="text-primary" />
+                        <span>{session.avgWpm} WPM</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock size={14} className="text-muted-foreground" />
+                        <span>{formatDuration(session.duration)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">{session.avgWpm} WPM</p>
-                    <p className="text-xs text-muted-foreground">{formatDuration(session.duration)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
       )}

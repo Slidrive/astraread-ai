@@ -1,65 +1,74 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription,
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
-interface DocumentLibraryProps {
 import { Badge } from './ui/badge';
-  onDeleteDocument: (docId: string) => void;
+import { ScrollArea } from './ui/scroll-area';
 import { toast } from 'sonner';
 import { SavedDocument } from '@/lib/types';
+import { BookOpen, Clock, Trash } from '@phosphor-icons/react';
 
-
+interface DocumentLibraryProps {
+  documents: SavedDocument[];
   onLoadDocument: (doc: SavedDocument) => void;
-  );
+  onDeleteDocument: (docId: string) => void;
+  onClose: () => void;
 }
 
-export function DocumentLibrary({ onLoadDocument, onClose }: DocumentLibraryProps) {
-  const [documents, setDocuments] = useKV<SavedDocument[]>('saved-documents', []);
+export function DocumentLibrary({
+  documents,
+  onLoadDocument,
+  onDeleteDocument,
+  onClose,
+}: DocumentLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredDocs = documents.filter(doc =>
+  const filteredDocs = documents.filter((doc) =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = (docId: string) => {
-    setDocuments(currentDocs => currentDocs.filter(doc => doc.id !== docId));
+  const handleLoad = (doc: SavedDocument) => {
+    onLoadDocument(doc);
+    toast.success(`Loaded "${doc.title}"`);
+    onClose();
+  };
+
+  const handleDelete = (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDeleteDocument(docId);
     toast.success('Document deleted');
+  };
+
+  const getWordCount = (text: string): number => {
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  };
+
+  const formatDate = (timestamp?: number): string => {
+    if (!timestamp) return 'Never';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
     
-
-          onChange={(e) => setSearchQuery(e.ta
-        />
-          Clos
-      </div>
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
     
-
-            <p className="text-muted-foregroun
-            </p>
-              Documents are automatic
-          </CardContent>
-      ) : (
-          <div className="space-y-3">
-              <Card
-                className="hover:border-primary tra
-
-                  <div className="flex i
-                      <CardTitle className="text-
-                        <span className="flex items
-                          {getWordCount(doc.text
-                        {doc.wpm && (
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
     
-
-                        <span className="f
-                          {formatDate(doc.lastReadAt)}
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
     
+    return date.toLocaleDateString();
+  };
 
-          
-                        e.stopP
-                      }}
-              
-                    </Button>
-                </CardHeader>
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search documents..."
+          value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1"
         />
@@ -76,7 +85,7 @@ export function DocumentLibrary({ onLoadDocument, onClose }: DocumentLibraryProp
               {searchQuery ? 'No documents found' : 'No saved documents yet'}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Documents are automatically saved when you load text
+              Documents are automatically saved when you start reading
             </p>
           </CardContent>
         </Card>
@@ -93,46 +102,37 @@ export function DocumentLibrary({ onLoadDocument, onClose }: DocumentLibraryProp
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-3 mt-1">
+                      <CardDescription className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="flex items-center gap-1">
                           <BookOpen size={14} />
                           {getWordCount(doc.text)} words
                         </span>
                         {doc.wpm && (
-                          <span className="flex items-center gap-1">
-                            <Zap size={14} />
+                          <Badge variant="secondary" className="text-xs">
                             {doc.wpm} WPM
-                          </span>
+                          </Badge>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} />
+                        <span className="flex items-center gap-1 text-xs">
+                          <Clock size={12} />
                           {formatDate(doc.lastReadAt)}
                         </span>
                       </CardDescription>
                     </div>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(doc.id);
-                      }}
-                      className="hover:bg-destructive hover:text-destructive-foreground"
+                      size="sm"
+                      onClick={(e) => handleDelete(doc.id, e)}
+                      className="flex-shrink-0"
                     >
-                      <Trash2 size={18} />
+                      <Trash size={16} />
                     </Button>
                   </div>
-
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {doc.text.substring(0, 150)}...
-                  </p>
-                </CardContent>
-
+                </CardHeader>
+              </Card>
             ))}
           </div>
         </ScrollArea>
-
+      )}
     </div>
-
+  );
 }

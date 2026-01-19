@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useKV } from '@github/spark/hooks';
 import { parseTextIntoChunks, TextChunk } from './lib/text-parser';
 import { runOcrOnFile } from './lib/ocr-service';
 import { Toaster, toast } from 'sonner';
@@ -52,7 +53,7 @@ const App: React.FC = () => {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [showStudyTools, setShowStudyTools] = useState(false);
   
-  const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
+  const [savedDocuments, setSavedDocuments] = useKV<SavedDocument[]>('saved-documents', []);
   const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -134,6 +135,28 @@ const App: React.FC = () => {
       setCurrentIndex(0);
       setShowInput(false);
       const estimatedTime = Math.round(wordCount / safeWpm);
+      
+      const newDocId = `doc-${Date.now()}`;
+      setCurrentDocumentId(newDocId);
+      
+      const newDocument: SavedDocument = {
+        id: newDocId,
+        title: inputText.substring(0, 50).trim() + (inputText.length > 50 ? '...' : ''),
+        text: inputText,
+        lastReadAt: Date.now(),
+        wpm: safeWpm,
+      };
+      
+      setSavedDocuments((currentDocs: SavedDocument[]) => {
+        const existingIndex = currentDocs.findIndex((d: SavedDocument) => d.text === inputText);
+        if (existingIndex >= 0) {
+          const updated = [...currentDocs];
+          updated[existingIndex] = { ...updated[existingIndex], lastReadAt: Date.now(), wpm: safeWpm };
+          return updated;
+        }
+        return [...currentDocs, newDocument];
+      });
+      
       toast.success(`Text loaded successfully! Estimated reading time: ${estimatedTime} min`);
     } catch (err) {
       console.error(err);
@@ -524,7 +547,7 @@ const App: React.FC = () => {
                 setShowLibrary(false);
               }}
               onDeleteDocument={(docId) => {
-                setSavedDocuments((docs) => docs.filter((d) => d.id !== docId));
+                setSavedDocuments((docs: SavedDocument[]) => docs.filter((d: SavedDocument) => d.id !== docId));
               }}
               onClose={() => setShowLibrary(false)}
             />
@@ -540,12 +563,12 @@ const App: React.FC = () => {
             <ReadingStats
               totalWordsRead={wordsRead}
               currentWpm={wpm}
-              sessionsToday={savedDocuments.filter((d) => {
+              sessionsToday={savedDocuments.filter((d: SavedDocument) => {
                 const today = new Date().toDateString();
                 return d.lastReadAt && new Date(d.lastReadAt).toDateString() === today;
               }).length}
               avgCompletionRate={progress}
-              recentSessions={savedDocuments.slice(-10).map((d) => ({
+              recentSessions={savedDocuments.slice(-10).map((d: SavedDocument) => ({
                 timestamp: d.lastReadAt || Date.now(),
                 wordsRead: getWordCount(d.text),
                 avgWpm: d.wpm || 500,
@@ -560,7 +583,7 @@ const App: React.FC = () => {
           <DialogContent className="max-w-3xl bg-slate-900 border-slate-700">
             <DocumentChat
               documentText={inputText}
-              documentTitle={currentDocumentId ? savedDocuments.find((d) => d.id === currentDocumentId)?.title || 'Current Document' : 'Current Document'}
+              documentTitle={currentDocumentId ? savedDocuments.find((d: SavedDocument) => d.id === currentDocumentId)?.title || 'Current Document' : 'Current Document'}
             />
           </DialogContent>
         </Dialog>
