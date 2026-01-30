@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: astralearn
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: astralearn-config
+  namespace: astralearn
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  MILVUS_HOST: "milvus"
+  MILVUS_PORT: "19530"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: astralearn-secrets
+  namespace: astralearn
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://user:password@postgres:5432/astralearn"
+  MONGODB_URL: "mongodb://user:password@mongodb:27017"
+  REDIS_URL: "redis://redis:6379"
+  JWT_SECRET_KEY: "change-this-in-production"
+  OPENAI_API_KEY: "your-openai-api-key"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astralearn-backend
+  namespace: astralearn
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astralearn-backend
+  template:
+    metadata:
+      labels:
+        app: astralearn-backend
+    spec:
+      containers:
+      - name: backend
+        image: astralearn/backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: astralearn-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: astralearn-config
+              key: LOG_LEVEL
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: astralearn-secrets
+              key: DATABASE_URL
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: astralearn-secrets
+              key: MONGODB_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: astralearn-secrets
+              key: REDIS_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: astralearn-secrets
+              key: JWT_SECRET_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: astralearn-secrets
+              key: OPENAI_API_KEY
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: astralearn-backend
+  namespace: astralearn
+spec:
+  selector:
+    app: astralearn-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astralearn-frontend
+  namespace: astralearn
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: astralearn-frontend
+  template:
+    metadata:
+      labels:
+        app: astralearn-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: astralearn/frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: astralearn-frontend
+  namespace: astralearn
+spec:
+  selector:
+    app: astralearn-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: astralearn-ingress
+  namespace: astralearn
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - astralearn.ai
+    - api.astralearn.ai
+    secretName: astralearn-tls
+  rules:
+  - host: astralearn.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: astralearn-frontend
+            port:
+              number: 80
+  - host: api.astralearn.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: astralearn-backend
+            port:
+              number: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: astralearn-backend-hpa
+  namespace: astralearn
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astralearn-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
